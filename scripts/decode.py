@@ -3,17 +3,30 @@
 import numpy as np
 import sys
 import subprocess
+import os
+import logging
+
 
 def pcap_extract(files):
     Rss = list()
+    files_ = list()
 
     for f in files:
+        if os.path.isdir(f): 
+            tmp = os.listdir(f)
+            for tmpf in tmp:            
+                if tmpf.endswith('.pcap'): files_.append(f+tmpf)
+        else: files_.append(f)
+
+    for f in files_:
+        logging.info('Processing {:s}'.format(f))
         cmd = 'tcpdump -r {:s}'.format(f)
 
         try:
             pcap = subprocess.check_output(cmd,shell=True,stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+            logging.warning('Could not process file {:s} - returned with error (code {})'.format(f, e.returncode))
+            logging.debug('[pcap_extract] [Error] {}'.format(e.output))
 
         pcap = str(pcap).split('\\n')
         for l in pcap:
@@ -30,10 +43,10 @@ def pcap_extract(files):
                 Rss.append([t_s,freq,mac,np.asarray(rss)])
             except:
                 pass
-
-    for rss in Rss:
-        print('{:6f}, {:4d}, {:20s}, {:}'.format(*rss))
-
+    
+    #for rss in Rss:
+    #    print('{:6f}, {:4d}, {:20s}, {:}'.format(*rss))
+    
     return Rss
     
 if __name__ == '__main__':
