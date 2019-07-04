@@ -7,7 +7,7 @@ import os
 import logging
 
 
-def pcap_extract(files):
+def pcap_extract(files,verbose=False):
     Rss = list()
     files_ = list()
 
@@ -20,36 +20,38 @@ def pcap_extract(files):
 
     for f in files_:
         logging.info('Processing {:s}'.format(f))
-        cmd = 'tcpdump -r {:s}'.format(f)
+        cmd = 'tcpdump -tt -e -r {:s}'.format(f)
 
         try:
             pcap = subprocess.check_output(cmd,shell=True,stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             logging.warning('Could not process file {:s} - returned with error (code {})'.format(f, e.returncode))
             logging.debug('[pcap_extract] [Error] {}'.format(e.output))
+            pcap = None
 
-        pcap = str(pcap).split('\\n')
-        for l in pcap:
-            try: 
-                w = str(l).split()
-                rss = list()
-                t_s = w[0].split(':')
-                t_s = int(t_s[0])*3600+int(t_s[1])*60+float(t_s[2]) 
-                            
-                for i in range(len(w)):
-                    if 'MHz' in w[i]: freq = int(w[i-1]) 
-                    if 'dBm' in w[i]: rss.append(int(w[i].split('dBm')[0]))
-                    if 'Beacon' in w[i]: mac = w[i+1]    
-                Rss.append([t_s,freq,mac,np.asarray(rss)])
-            except:
-                pass
+        if pcap is not None:
+            pcap = str(pcap).split('\\n')
+            for l in pcap:
+                try: 
+                    w = str(l).split()
+                    rss = list()
+                    t_s = float(w[0])
+  
+                    for i in range(len(w)):
+                        if 'MHz' in w[i]: freq = int(w[i-1]) 
+                        if 'dBm' in w[i]: rss.append(int(w[i].split('dBm')[0]))
+                        if 'BSSID' in w[i]: mac = w[i].split('BSSID:')[1]    
+                    Rss.append([t_s,freq,mac,np.asarray(rss)])
+                except:
+                    pass
     
-    #for rss in Rss:
-    #    print('{:6f}, {:4d}, {:20s}, {:}'.format(*rss))
-    
+    if verbose:
+        for rss in Rss:
+            print('{:6f}, {:4d}, {:20s}, {:}'.format(*rss))
+
     return Rss
     
 if __name__ == '__main__':
     files = sys.argv[1:]#sys.stdin
-    pcap_extract(files)
+    pcap_extract(files,verbose=True)
     
