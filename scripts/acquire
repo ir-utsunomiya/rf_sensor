@@ -1,0 +1,59 @@
+#!/usr/bin/python
+
+import rospy
+import numpy as np
+
+from socket import *
+from rf_sensor.msg import Rss
+
+def open_socket(port):
+    s=socket(AF_INET, SOCK_DGRAM)
+    s.bind(('',port))
+    return s
+
+class RSS():
+    def __init__(self):
+        rospy.init_node('rss',anonymous=True)
+
+        ##ros param
+        self.ns = rospy.get_namespace()
+        self.rss_port = rospy.get_param('~rss_port',8801)
+        self.frame_id = rospy.get_param('~frame_id','rss')
+        rss_topic = rospy.get_param('~rss_topic',self.ns+'rss')
+
+        #publishers
+        rospy.loginfo('[rss] publishing rss msg on {} topic'.format(rss_topic))
+        self.pub_rss = rospy.Publisher(rss_topic,Rss,queue_size=1)
+
+        s = open_socket(self.rss_port)
+        seq = 0
+        rospy.loginfo('[rss] waiting for udp broadcast on port {}'.format(self.rss_port))
+        while not rospy.is_shutdown():
+            m=s.recvfrom(1024)
+            if True: #try:
+                rss_msg = Rss()
+                rss_msg.header.seq =+ seq
+                rss_msg.header.stamp = rospy.Time.now()
+                rss_msg.header.frame_id = self.frame_id
+
+                string = m[0].decode().split(' ')
+                c = 0
+                rss_msg.data = list()
+                for i in range(len(string)):
+                    if 'MHz'   in string[i]: rss_msg.freq = np.int(string[i-1]); c+=100;
+                    if 'BSSID' in string[i]: rss_msg.mac_address = str(string[i][6:]); c+=100;
+                    if 'dBm'   in string[i]: rss_msg.data.append(np.int8(string[i][:-3])); c+=1;
+                if c>200: #data is complete
+                    #Publish msg
+                    self.pub_rss.publish(rss_msg)
+                else:
+                    rospy.loginfo('[rss] incomplete data')
+                    rospy.loginfo(m[0].decode())
+
+            else: #except:
+                rospy.loginfo('[rss] corrupted packet')
+                rospy.loginfo(m[0].decode())
+        s.close()
+
+if __name__ == '__main__':
+    rss = RSS()
