@@ -8,7 +8,7 @@ from rf_sensor.msg import Rss
 
 def open_socket(port):
     s=socket(AF_INET, SOCK_DGRAM)
-    s.bind(('192.168.1.255',port))
+    s.bind(('192.168.11.255',port))
     return s
 
 class RSS():
