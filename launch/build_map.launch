@@ -1,7 +1,7 @@
 <launch>
   <!-- parameters and arguments -->
 <param name="use_sim_time" value="true" />
-  <arg name="bag_path" default="/mnt/rosbags/home/koda/rosbags/bagfiles/09_14" />
+  <arg name="bag_path" default="/data/bags/tsukuba_challenge/09_14" />
   <arg name="bag_name" default="paper_0" />
 
   <!-- rosbag and required tf -->
