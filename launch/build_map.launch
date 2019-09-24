@@ -1,14 +1,15 @@
 <launch>
   <!-- parameters and arguments -->
 <param name="use_sim_time" value="true" />
-  <arg name="bag_path" default="/data/bags/tsukuba_challenge/09_14" />
-  <arg name="bag_name" default="paper_1" />
+  <arg name="bag_path" default="/mnt/rosbags/home/koda/rosbags/bagfiles/09_14" />
+  <arg name="bag_name" default="paper_0" />
 
   <!-- rosbag and required tf -->
   <!-- Playback rosbag -->
   <node name="player" pkg="rosbag" type="play" output="screen" args="--clock --rate=1 $(arg bag_path)/$(arg bag_name).bag" />
   <node name="odom2tf" pkg="odometry2tf" type="odometry2tf" /> <!-- nav_odom to tf -->
-  <node name="link_base_laser" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 base_link laser" />
+  <node name="link_base_laser" pkg="tf2_ros" type="static_transform_publisher" args="0.15 0 0.38 0 0 0 base_link laser" />
+
   
   <!-- slam and map saver -->
   <node name="slam" pkg="gmapping" type="slam_gmapping" output="screen">

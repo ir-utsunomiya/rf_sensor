@@ -2,7 +2,7 @@
   <!-- parameters and arguments -->
   <!-- main parameters -->
   <param name="use_sim_true" value="true" />
-  <arg name="bag_path" default="/data/bags/tsukuba_challenge/09_14" />
+  <arg name="bag_path" default="/mnt/rosbags/home/koda/rosbags/bagfiles/09_14" />
   <arg name="map_name" default="paper_0_map" />
   <arg name="bag_name" default="paper_0" />
   <!-- amcl parameters -->
@@ -19,7 +19,8 @@
   <!-- Playback rosbag -->
   <node name="player" pkg="rosbag" type="play" args="--clock --rate=1 $(arg bag_path)/$(arg bag_name).bag" />
   <node name="odom2tf" pkg="odometry2tf" type="odometry2tf" /> <!-- nav_odom to tf -->
-  <node name="link_base_laser" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 base_link laser" />
+  <node name="link_base_laser" pkg="tf2_ros" type="static_transform_publisher" args="0.15 0 0.38 0 0 0 base_link laser" />
+
   
   <!-- localization and map saver -->
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg bag_path)/maps/$(arg map_name).yaml" />
