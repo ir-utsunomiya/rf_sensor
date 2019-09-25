@@ -1,3 +1,9 @@
+# cartographer
+```
+cd ~/catkin_ws_tsukuba/src/tsukuba_challenge/launch
+roslaunch sim.launch
+
+```
 
 # gmapping and amcl
 
@@ -59,7 +65,12 @@ roslaunch build_gt.launch bag_path:=${BAG_PATH} map_name:=${MAP_NAME} bag_name:=
 
 # Output amcl_pose to csv file
 
+# subscribe topic : /amcl_pose
 python amclpose2csv.py ${BAG_PATH}/${BAG_NAME}_gt.csv
+
+# subscribe topic : /odom
+python odom2csv.py ${BAG_PATH}/${BAG_NAME}_gt.csv
+
 --> waiting for finish
 
 # check row count
