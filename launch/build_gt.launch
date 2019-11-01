@@ -40,7 +40,7 @@
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find rf_sensor)/rviz/build_gt.rviz" />
 
   <!-- save pose odom and rss values into a new bag -->
-  <node name="recorder" pkg="rosbag" type="record" args="amcl_pose odom rss --output-name=$(arg bag_path)/$(arg bag_name)_gt.bag" />
+  <node name="recorder" pkg="rosbag" type="record" args="amcl_pose odom rss tf --output-name=$(arg bag_path)/$(arg bag_name)_gt.bag" />
 
 </launch>
 
