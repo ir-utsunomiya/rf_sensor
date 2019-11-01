@@ -1,0 +1,8 @@
+# Compiled/Optimized files
+*.pyc
+__pycache__/
+
+# Jupyter notebooks
+.ipynb_checkpoints
+
+
