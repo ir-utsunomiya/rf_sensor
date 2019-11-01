@@ -1,6 +1,20 @@
 import pandas as pd
 import numpy as np
 
+def group_time(df,**kwargs):
+    verbose    = kwargs.get('verbose',False)
+    delta_time = kwargs.get('delta_time',1.) # in seconds
+    # computing start and end times
+    start_time = np.min(df['secs'])
+    end_time   = np.max(df['secs'])
+    rss_time_  = np.arange(0,int(1e9)*(end_time-start_time),int(1e9)*delta_time)
+    # group dataframe items by time range and generating a list of dataframes per time range
+    bins = pd.cut(int(1e9)*(df['secs']-start_time)+df['nsecs'],rss_time_)
+    df_group = df.groupby(bins)
+    df_list = [group for name, group in df_group]
+    if verbose: print('{:25s}: {:}'.format('Number of dataframes',len(df_list)))
+    return df_list
+
 def filter_min_distance(df_list,**kwargs):
     verbose = kwargs.get('verbose',False)
     min_update_d = kwargs.get('min_update_d',1.0)
