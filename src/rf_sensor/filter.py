@@ -45,3 +45,22 @@ def filter_min_distance(df_list,**kwargs):
     df_list_update.append(df_last)
     df_list = df_list_update
     return df_list_update
+
+def stats_mac(df_list,**kwargs):
+    verbose = kwargs.get('verbose',False)
+    min_readings = kwargs.get('min_readings',3)
+    #group by mac and get stats
+    df_list_stats = [datum.groupby('mac_address').agg({'data':['mean','std','count'],
+                            'x':['mean'],'y':['mean'],'yaw':['mean']}) for datum in df_list]
+    df_list_ = [df_[df_['data']['count']>=min_readings] for df_ in df_list_stats]
+
+    df_list_filtered = list()
+    for df_ in df_list_:
+        if len(df_)>0: df_list_filtered.append(df_)
+
+    if verbose:
+        print('Data frames     : {:4d}'.format(len(df_list_filtered)))
+        print('Avg Mac/Frame   : {:7.2f}'.format(np.mean(np.asarray([len(df_) for df_ in df_list_filtered]))))       
+        print('Avg Reading/Mac : {:7.2f}'.format(np.mean(np.asarray([np.mean(np.asarray(df_['data']['count'])) for df_ in df_list_filtered]))))       
+
+    return df_list_filtered
