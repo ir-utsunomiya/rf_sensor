@@ -6,9 +6,9 @@ import numpy as np
 from socket import *
 from rf_sensor.msg import Rss
 
-def open_socket(port):
+def open_socket(ip,port):
     s=socket(AF_INET, SOCK_DGRAM)
-    s.bind(('192.168.11.255',port))
+    s.bind((ip,port))
     return s
 
 class RSS():
@@ -18,6 +18,7 @@ class RSS():
         ##ros param
         self.ns = rospy.get_namespace()
         self.rss_port = rospy.get_param('~rss_port',8801)
+        self.rss_ip   = rospy.get_param('~rss_ip','160.12.106.255')
         self.frame_id = rospy.get_param('~frame_id','rss')
         rss_topic = rospy.get_param('~rss_topic',self.ns+'rss')
 
@@ -25,12 +26,17 @@ class RSS():
         rospy.loginfo('[rss] publishing rss msg on {} topic'.format(rss_topic))
         self.pub_rss = rospy.Publisher(rss_topic,Rss,queue_size=1)
 
-        s = open_socket(self.rss_port)
+
+    def run(self):
+        s = open_socket(self.rss_ip,self.rss_port)
+        rospy.loginfo('[rss] binded to {}:{}'.format(self.rss_ip,self.rss_port))
         seq = 0
-        rospy.loginfo('[rss] waiting for udp broadcast on port {}'.format(self.rss_port))
+        rospy.loginfo('[rss] waiting for udp broadcast')
+
+        first = True
         while not rospy.is_shutdown():
             m=s.recvfrom(1024)
-            if True: #try:
+            try:
                 rss_msg = Rss()
                 rss_msg.header.seq =+ seq
                 rss_msg.header.stamp = rospy.Time.now()
@@ -50,10 +56,16 @@ class RSS():
                     rospy.loginfo('[rss] incomplete data')
                     rospy.loginfo(m[0].decode())
 
-            else: #except:
+                if first:
+                    rospy.loginfo('[rss] Receiving messages')
+                    first = False
+
+            except:
                 rospy.loginfo('[rss] corrupted packet')
                 rospy.loginfo(m[0].decode())
+                first = True
         s.close()
 
 if __name__ == '__main__':
     rss = RSS()
+    rss.run()
