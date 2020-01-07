@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
+"""
+Filters for rss data
+"""
+
 def group_time(df,**kwargs):
     verbose    = kwargs.get('verbose',False)
     delta_time = kwargs.get('delta_time',1.) # in seconds

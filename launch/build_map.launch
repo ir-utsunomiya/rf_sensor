@@ -6,15 +6,21 @@
 
   <!-- rosbag and required tf -->
   <!-- Playback rosbag -->
+  <?ignore
   <node name="player" pkg="rosbag" type="play" output="screen" args="--clock --rate=1 $(arg bag_path)/$(arg bag_name).bag" />
+  ?>
   <node name="odom2tf" pkg="odometry2tf" type="odometry2tf" /> <!-- nav_odom to tf -->
   <node name="link_base_laser" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 base_link laser" />
-  
+  <node name="link_base_vlp" pkg="tf2_ros" type="static_transform_publisher" args="-0.37 0.05 1.2 -1.57079 0 0 base_link velodyne" />
+
   <!-- slam and map saver -->
   <node name="slam" pkg="gmapping" type="slam_gmapping" output="screen">
-    <remap from="scan" to="/hokuyo/scan" />
-    <param name="_particles" value="200" />
-    <param name="_resampleThreshold" value="0.75"/>
+    <remap from="scan" to="/vlp16/scan" />
+    <param name="particles" value="30" />
+    <param name="resampleThreshold" value="0.75"/>
+    <param name="delta" value="0.25"/>
+    <param name="linearUpdate" value="0.1"/>
+    <param name="angularUpdate" value="0.01"/>
   </node> 
 
   <!-- rviz -->

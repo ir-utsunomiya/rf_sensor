@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-
+"""
+Extracts rss data from pcap files
+"""
 import numpy as np
 import sys
 import subprocess

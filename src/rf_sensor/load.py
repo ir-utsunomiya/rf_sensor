@@ -5,6 +5,10 @@ import pandas as pd
 
 from .msg import Rss
 
+"""
+load all rss info from rosbag
+"""
+
 def load_data(**kwargs):
     file_name = kwargs.get('file_name','paper_0_gt')
     file_path = kwargs.get('file_path','/data/bags/tsukuba_challenge/09_14/')
