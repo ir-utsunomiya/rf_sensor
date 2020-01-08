@@ -29,9 +29,11 @@ class ChannelHopper:
 
     def run(self):
         ts = 1.0*self.sampling_time/len(self.channels)
-        while(True):
+        ret = 0
+        while(not ret):
             for ch in self.channels:
-                os.system("sudo -S iwconfig {:s} channel {:d}".format(self.iface,ch))
+                ret = os.system("sudo -S iwconfig {:s} channel {:d}".format(self.iface,ch))
+                if ret != 0 : print('[Error] Channel hopper could not change channel. Are you running as sudo?');
                 time.sleep(ts)
 
 if __name__=="__main__":
