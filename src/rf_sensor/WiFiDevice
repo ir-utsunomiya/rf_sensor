@@ -2,12 +2,13 @@
 
 #****************************************************
 # Class for manipulating wifi interfaces
-# Input: 
+# Input:
 #   -i, iface:      wireless interface name
 #   -c, channels:   channels to survey
 #   -f, filter:     filter applied to received packets
-# Output:
-#   -stream of captured packets
+# Variables:
+#   self.tcpdump_process is the process acquiring tcpdump data
+#   to read use self.tcpdumpo_process.stdout.readline()
 #****************************************************
 
 from __future__ import print_function
@@ -21,8 +22,8 @@ def execute_retry(cmd, max_counter = 10):
     while os.system(cmd):
         counter += 1
         print("\n[{:02d}/{:02d}] {:s} Failed".format(counter, max_counter, cmd),end="")
-        if counter >  max_counter : print('\n[Error] Max trial reached'); return 1    
-    print("OK")    
+        if counter >  max_counter : print('\n[Error] Max trial reached'); return 1
+    print("OK")
     return 0
 
 class WiFiDevice:
@@ -41,7 +42,7 @@ class WiFiDevice:
 
         if self.init_device() == 0: print('\nDevice Initialized')
         else: return 1;
-    
+
     def init_device(self):
         # turn the interface on/off to reset
         if execute_retry("sudo -S ifconfig {:s} down".format(self.iface)) != 0          : return 1
@@ -56,7 +57,7 @@ class WiFiDevice:
 
     def chopper_start(self):
         self.cmd = "python channel_hopper.py -i {} -t {} -ch {}".format(self.iface,1.*self.chopper_ts," ".join(str(ch) for ch in self.channels))
-        self.isCHopperRunning = True        
+        self.isCHopperRunning = True
         #try:
         subprocess.Popen(self.cmd.split(),stdout=subprocess.PIPE)
         #except:
@@ -70,3 +71,4 @@ class WiFiDevice:
         cmd = 'sudo -S tcpdump -i {:s} -ne --time-stamp-precision=micro -l --immediate-mode type mgt subtype beacon'.format(self.iface)
         self.tcpdump_process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)
         self.isTcpdumpRunning = True
+
