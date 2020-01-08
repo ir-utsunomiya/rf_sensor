@@ -13,7 +13,7 @@ sudo visudo
 Go to the end of the file and add
 
 ```
-your_user_name ALL=(root) NOPASSWD: /sbin/iwconfig, sbin/ifconfig
+your_user_name ALL=(root) NOPASSWD: /sbin/iwconfig, /sbin/ifconfig
 ```
 
 replace `your_user_name` by the name of your user
