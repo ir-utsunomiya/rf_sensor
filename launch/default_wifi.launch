@@ -1,4 +1,4 @@
 <launch>
   <rosparam file="$(find rf_sensor)/config/default_wifi.yaml" />
-  <node pkg="rf_sensor" type="acquire_wifi"  name="wlp5s0"  output="screen" respawn="true"/>
+  <node pkg="rf_sensor" type="wifi_acquire"  name="wlp5s0"  output="screen" respawn="true"/>
 </launch>
