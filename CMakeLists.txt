@@ -67,11 +67,13 @@ include_directories(
 #############
 ## Install ##
 #############
-#install(TARGETS acquire_pcap
-#  scripts/my_python_script
-#  nodes/acquire
-#  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-#)
+catkin_install_python(PROGRAMS
+  src/rf_sensor/channel_hopper.py
+  src/rf_sensor/WiFiDevice.py
+  nodes/acquire_udp
+  nodes/acquire_tcpdump
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node

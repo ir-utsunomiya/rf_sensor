@@ -2,47 +2,48 @@
 
 import rospy
 import numpy as np
-
-from socket import *
 from rf_sensor.msg import Rss
-
-def open_socket(ip,port):
-    s=socket(AF_INET, SOCK_DGRAM)
-    s.bind((ip,port))
-    return s
+from rf_sensor.WiFiDevice import WiFiDevice
 
 class RSS():
     def __init__(self):
         rospy.init_node('rss',anonymous=True)
 
-        ##ros param
-        self.ns = rospy.get_namespace()
-        self.rss_port = rospy.get_param('~rss_port',8801)
-        self.rss_ip   = rospy.get_param('~rss_ip','160.12.106.255')
-        self.frame_id = rospy.get_param('~frame_id','rss')
-        rss_topic = rospy.get_param('~rss_topic',self.ns+'rss')
+        ## ros param
+        self.ns         = rospy.get_namespace()
+        self.frame_id   = rospy.get_param('~frame_id','rss')
+        rss_topic       = rospy.get_param('~rss_topic',self.ns+'rss')
+        ## WiFi Device param
+        iface           = rospy.get_param('~iface','wlp5s0')
+        channels        = rospy.get_param('channels',[1, 6, 11])
+        ch_ts           = rospy.get_param('channel_hopper_sampling_time',1.0)
+        filter          = rospy.get_param('filter','Beacon')
 
-        #publishers
+        # Publishers
         rospy.loginfo('[rss] publishing rss msg on {} topic'.format(rss_topic))
         self.pub_rss = rospy.Publisher(rss_topic,Rss,queue_size=1)
 
+        # Init WiFi device
+        self.wifidevice = WiFiDevice(iface=iface,
+                                     channels=channels,
+                                     channel_hopper_sampling_time=ch_ts,
+                                     filter=filter)
 
     def run(self):
-        s = open_socket(self.rss_ip,self.rss_port)
-        rospy.loginfo('[rss] binded to {}:{}'.format(self.rss_ip,self.rss_port))
         seq = 0
-        rospy.loginfo('[rss] waiting for udp broadcast')
-
         first = True
+        self.wifidevice.chopper_start()
+        self.wifidevice.tcpdump_start()
+
         while not rospy.is_shutdown():
-            m=s.recvfrom(1024)
             try:
                 rss_msg = Rss()
                 rss_msg.header.seq =+ seq
                 rss_msg.header.stamp = rospy.Time.now()
                 rss_msg.header.frame_id = self.frame_id
 
-                string = m[0].decode().split(' ')
+                m = self.wifidevice.read()
+                string = m.decode().split(' ')
                 c = 0
                 rss_msg.data = list()
                 for i in range(len(string)):

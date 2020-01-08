@@ -36,6 +36,10 @@ class WiFiDevice:
         self.chopper_ts = kwargs.get('channel_hopper_sampling_time',1.0)
         self.filter = kwargs.get('filter','Beacon')
 
+        # filters
+        self.filter_cmd = ''
+        if self.filter == 'Beacon': self.filter_cmd += ' type mgt subtype beacon'
+
         self.isCHopperRunning = False # Channel hopper running flag
         self.isTcpdumpRunning = False # Packages being acquired
         self.tcpdump_process  = None
@@ -47,7 +51,7 @@ class WiFiDevice:
         # turn the interface on/off to reset
         if execute_retry("sudo -S ifconfig {:s} down".format(self.iface)) != 0          : return 1
         if execute_retry("sudo -S ifconfig {:s} up".format(self.iface)) != 0            : return 1
-        # set interface to default channel (1) 
+        # set interface to default channel (1)
         if execute_retry("sudo -S iwconfig {:s} channel 1".format(self.iface)) != 0     : return 1
         # change interface to monitor mode (off -> monitor mode -> on)
         if execute_retry("sudo -S ifconfig {:s} down".format(self.iface)) != 0          : return 1
@@ -56,7 +60,7 @@ class WiFiDevice:
         return 0
 
     def chopper_start(self):
-        self.cmd = "python channel_hopper.py -i {} -t {} -ch {}".format(self.iface,1.*self.chopper_ts," ".join(str(ch) for ch in self.channels))
+        self.cmd = "rosrun rf_sensor channel_hopper.py -i {} -t {} -ch {}".format(self.iface,1.*self.chopper_ts," ".join(str(ch) for ch in self.channels))
         self.isCHopperRunning = True
         #try:
         subprocess.Popen(self.cmd.split(),stdout=subprocess.PIPE)
@@ -68,7 +72,15 @@ class WiFiDevice:
         """
         iface must be initialized before with init(iface)
         """
-        cmd = 'sudo -S tcpdump -i {:s} -ne --time-stamp-precision=micro -l --immediate-mode type mgt subtype beacon'.format(self.iface)
+        cmd = 'sudo -S tcpdump -i {:s} -ne --time-stamp-precision=micro -l --immediate-mode {:s}'.format(self.iface,self.filter_cmd)
         self.tcpdump_process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)
         self.isTcpdumpRunning = True
 
+    def read(self):
+        """
+        tcpdump should be running
+        """
+        if self.isTcpdumpRunning:
+            return self.tcpdump_process.stdout.readline()
+        else:
+            print('[Error] First run tcpdump_start')
