@@ -10,17 +10,25 @@ class RSS():
         rospy.init_node('rss',anonymous=True)
 
         ## ros param
-        self.ns         = rospy.get_namespace()
+        self.ns         = rospy.get_name()
         self.frame_id   = rospy.get_param('~frame_id','rss')
-        rss_topic       = rospy.get_param('~rss_topic',self.ns+'rss')
+        rss_topic       = rospy.get_param('~rss_topic','rss')
+        if len(self.ns) >= 1: rss_topic = self.ns+'/'+rss_topic
         ## WiFi Device param
         iface           = rospy.get_param('~iface','wlp5s0')
-        channels        = rospy.get_param('channels',[1, 6, 11])
-        ch_ts           = rospy.get_param('channel_hopper_sampling_time',1.0)
-        filter          = rospy.get_param('filter','Beacon')
+        channels        = rospy.get_param('~channels',[1, 6, 11])
+        ch_ts           = rospy.get_param('~channel_hopper_sampling_time',1.0)
+        filter          = rospy.get_param('~filter','Beacon')
+
+        # parameter info
+        rospy.loginfo('{:15s} {:s}'.format('frame_id:', self.frame_id))
+        rospy.loginfo('{:15s} {:s}'.format('rss_topic', rss_topic))
+        rospy.loginfo('{:15s} {:s}'.format('device', iface))
+        rospy.loginfo('{:15s} {:} '.format('channels', channels))
+        rospy.loginfo('{:15s} {:} '.format('total scan time', ch_ts))
+        rospy.loginfo('{:15s} {:s}'.format('Beacon', filter))
 
         # Publishers
-        rospy.loginfo('[rss] publishing rss msg on {} topic'.format(rss_topic))
         self.pub_rss = rospy.Publisher(rss_topic,Rss,queue_size=1)
 
         # Init WiFi device
