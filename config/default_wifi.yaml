@@ -1,0 +1,7 @@
+wlp5s0:
+  iface: "wlp5s0"
+  frame_id: "rss"
+  rss_topic: "rss"
+  channels: [1, 6, 11]
+  channel_hopper_sampling_time: 2.0
+  filter: "Beacon"
