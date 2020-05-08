@@ -70,8 +70,8 @@ include_directories(
 catkin_install_python(PROGRAMS
   src/rf_sensor/channel_hopper.py
   src/rf_sensor/WiFiDevice.py
-  nodes/acquire_router
-  nodes/acquire_wifi
+  nodes/router_acquire
+  nodes/wifi_acquire
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -10,24 +10,25 @@ load all rss info from rosbag
 """
 
 def load_data(**kwargs):
-    file_name = kwargs.get('file_name','paper_0_gt')
-    file_path = kwargs.get('file_path','/data/bags/tsukuba_challenge/09_14/')
-    bag = rosbag.Bag(file_path+file_name+'.bag')
-
+    bag_filename = kwargs.get('bag_filename','/tmp/all.bag')
+    gt_bag_filename = kwargs.get('gt_bag_filename',bag_filename)
+    pose_topic = kwargs.get('pose_topic','/amcl_pose')
+    rf_topic   = kwargs.get('rf_topic','/rss')
+    print('bag filename    : {:s}'.format(bag_filename))
+    print('gt bag filename : {:s}'.format(gt_bag_filename))
+    print('pose topic      : {:s}'.format(pose_topic))
+    print('rf topic        : {:s}'.format(rf_topic))
     # rss
-    rss_secs   = list()
-    rss_nsecs  = list()
-    rss_mac    = list()
-    rss_freq   = list()
-    rss_data   = list()
+    bag = rosbag.Bag(bag_filename)
+    rss_secs, rss_nsecs, rss_mac, rss_freq, rss_data  = list(), list(), list(), list(), list()
 
-    for topic, msg, t in bag.read_messages(topics=['rss','/rss']):
+    for topic, msg, t in bag.read_messages(topics=[rf_topic,]):
         rss_secs.append(msg.header.stamp.secs)
         rss_nsecs.append(msg.header.stamp.nsecs)
         rss_mac.append(msg.mac_address)
         rss_freq.append(msg.freq)
         rss_data.append((msg.data[0]+95)/95.) #as of now only using the first rss measurement
-                                 #to use all measurements maybe convert msg.data tuple to np array
+                                              #to use all measurements maybe convert msg.data tuple to np array
 
     rss_secs  = np.asarray(rss_secs)
     rss_nsecs = np.asarray(rss_nsecs)
@@ -39,13 +40,10 @@ def load_data(**kwargs):
 
     # Try getting pose information if available
     # Pose
-    pose_secs  = list()
-    pose_nsecs = list()
-    pose_x     = list()
-    pose_y     = list()
-    pose_yaw   = list()
+    if gt_bag_filename is not None: bag = rosbag.Bag(gt_bag_filename)
+    pose_secs, pose_nsecs, pose_x, pose_y, pose_yaw = list(), list(), list(), list(), list()
 
-    for topic, msg, t in bag.read_messages(topics=['amcl_pose','/amcl_pose']):
+    for topic, msg, t in bag.read_messages(topics=[pose_topic,]):
         pose_secs.append(msg.header.stamp.secs)
         pose_nsecs.append(msg.header.stamp.nsecs)
         pose_x.append(msg.pose.pose.position.x)
