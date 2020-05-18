@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #****************************************************
 # Class for manipulating wifi interfaces
@@ -11,10 +11,12 @@
 #   to read use self.tcpdumpo_process.stdout.readline()
 #****************************************************
 
-from __future__ import print_function
+#from __future__ import print_function
 import sys
 import os
 import subprocess
+import multiprocessing
+import time
 
 def execute_retry(cmd, max_counter = 10):
     counter = 0
@@ -40,6 +42,8 @@ class WiFiDevice:
         self.filter_cmd = ''
         if self.filter == 'Beacon': self.filter_cmd += ' type mgt subtype beacon'
 
+        self.chopper_process = None
+
         self.isCHopperRunning = False # Channel hopper running flag
         self.isTcpdumpRunning = False # Packages being acquired
         self.tcpdump_process  = None
@@ -59,14 +63,26 @@ class WiFiDevice:
         if execute_retry("sudo -S ifconfig {:s} up".format(self.iface)) != 0            : return 1
         return 0
 
+    def chopper_run(self):
+        ts = 1.0*self.chopper_ts/len(self.channels)
+        ret = 0
+        while(not ret):
+            for ch in self.channels:
+                ret = os.system("sudo -S iwconfig {:s} channel {:d}".format(self.iface,ch))
+                if ret != 0 : print('[Error] Channel hopper could not change channel. Are you running as sudo?');
+                time.sleep(ts)
+
     def chopper_start(self):
-        self.cmd = "rosrun rf_sensor channel_hopper.py -i {} -t {} -ch {}".format(self.iface,1.*self.chopper_ts," ".join(str(ch) for ch in self.channels))
+        #self.cmd = "rosrun rf_sensor channel_hopper.py -i {} -t {} -ch {}".format(self.iface,1.*self.chopper_ts," ".join(str(ch) for ch in self.channels))
+        
+        if self.chopper_process is not None: self.chopper_process.terminate()
+        try:
+            self.chopper_process = multiprocessing.Process(target=self.chopper_run)
+            self.chopper_process.start()
+        except:
+            print('[Error] multiprocessing.Process(chopper_run) failed')
+
         self.isCHopperRunning = True
-        #try:
-        subprocess.Popen(self.cmd.split(),stdout=subprocess.PIPE)
-        #except:
-        #self.isCHopperRunning = False
-        #print('[Error] Channel Hopper unexpectedly stopped')
 
     def tcpdump_start(self):
         """
