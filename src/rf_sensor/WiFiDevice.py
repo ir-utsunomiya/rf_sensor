@@ -49,7 +49,7 @@ class WiFiDevice:
         self.tcpdump_process  = None
 
         if self.init_device() == 0: print('\nDevice Initialized')
-        else: return 1;
+        else: print('[Error] Device initialization failed')
 
     def init_device(self):
         # turn the interface on/off to reset
