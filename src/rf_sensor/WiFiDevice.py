@@ -55,15 +55,15 @@ class WiFiDevice:
         # turn the interface on/off to reset
         if execute_retry("sudo -S ifconfig {:s} down".format(self.iface)) != 0          : return 1
         if execute_retry("sudo -S ifconfig {:s} up".format(self.iface)) != 0            : return 1
-        # set interface to default channel (1)
-        if execute_retry("sudo -S iwconfig {:s} channel 1".format(self.iface)) != 0     : return 1
         # change interface to monitor mode (off -> monitor mode -> on)
         if execute_retry("sudo -S ifconfig {:s} down".format(self.iface)) != 0          : return 1
         if execute_retry("sudo -S iwconfig {:s} mode monitor".format(self.iface)) != 0  : return 1
         if execute_retry("sudo -S ifconfig {:s} up".format(self.iface)) != 0            : return 1
+        # set interface to default channel (1)
+        if execute_retry("sudo -S iwconfig {:s} channel 1".format(self.iface)) != 0     : return 1
         return 0
 
-    def chopper_run(self):
+    def chopper_cmd_(self):
         ts = 1.0*self.chopper_ts/len(self.channels)
         ret = 0
         while(not ret):
@@ -77,12 +77,13 @@ class WiFiDevice:
         
         if self.chopper_process is not None: self.chopper_process.terminate()
         try:
-            self.chopper_process = multiprocessing.Process(target=self.chopper_run)
+            self.chopper_process = multiprocessing.Process(target=self.chopper_cmd_)
             self.chopper_process.start()
         except:
             print('[Error] multiprocessing.Process(chopper_run) failed')
 
         self.isCHopperRunning = True
+        return 0
 
     def tcpdump_start(self):
         """
