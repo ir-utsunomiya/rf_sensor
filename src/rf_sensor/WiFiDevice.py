@@ -12,11 +12,10 @@
 #****************************************************
 
 #from __future__ import print_function
-import sys
-import os
-import subprocess
-import multiprocessing
-import time
+import sys, os
+import subprocess, multiprocessing
+import datetime, time
+import numpy as np
 
 def execute_retry(cmd, max_counter = 10):
     counter = 0
@@ -43,13 +42,13 @@ class WiFiDevice:
         if self.filter == 'Beacon': self.filter_cmd += ' type mgt subtype beacon'
 
         self.chopper_process = None
-
-        self.isCHopperRunning = False # Channel hopper running flag
-        self.isTcpdumpRunning = False # Packages being acquired
         self.tcpdump_process  = None
+        self.read_process = None
 
         if self.init_device() == 0: print('\nDevice Initialized')
         else: print('[Error] Device initialization failed')
+
+        self.data = multiprocessing.Manager().list() 
 
     def init_device(self):
         # turn the interface on/off to reset
@@ -69,7 +68,7 @@ class WiFiDevice:
         while(not ret):
             for ch in self.channels:
                 ret = os.system("sudo -S iwconfig {:s} channel {:d}".format(self.iface,ch))
-                if ret != 0 : print('[Error] Channel hopper could not change channel. Are you running as sudo?');
+                if ret != 0 : print('[Error] Channel hopper could not change channel. Are you running as sudo?')
                 time.sleep(ts)
 
     def chopper_start(self):
@@ -82,8 +81,11 @@ class WiFiDevice:
         except:
             print('[Error] multiprocessing.Process(chopper_run) failed')
 
-        self.isCHopperRunning = True
+        print('Channel Hopper Initialized')
         return 0
+    
+    def chopper_alive(self):
+        return self.chopper_process.is_alive()
 
     def tcpdump_start(self):
         """
@@ -91,13 +93,53 @@ class WiFiDevice:
         """
         cmd = 'sudo -S tcpdump -i {:s} -ne --time-stamp-precision=micro -l --immediate-mode {:s}'.format(self.iface,self.filter_cmd)
         self.tcpdump_process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)
-        self.isTcpdumpRunning = True
+        print('tcpdump process initialized')
+        return 0
+
+    def tcpdump_alive(self):
+        return self.tcpdump_process.poll() is None
+
+    def read_start(self):
+        if not self.tcpdump_alive(): self.tcpdump_start()
+        self.read_process = multiprocessing.Process(target=self.decode)
+        self.read_process.start()
+        print('RSS messages stored at data')
+        return 0
+
+    def read_alive(self):
+        return self.read_process.is_alive()
+
+    def decode(self,verbose=False):
+        """
+        tcpdump should be running
+        """
+        while True:
+            rss_data = list()
+            s = 0
+            try:
+                tmp = self.tcpdump_process.stdout.readline()
+                tmp = tmp.split()
+                for i in range(len(tmp)):
+                    if b'MHz' in tmp[i]: freq = int(tmp[i-1]); s+=10
+                    if b'dBm' in tmp[i]: rss_data.append(int(tmp[i].split(b'dBm')[0])); s+=1
+                    if b'BSSID' in tmp[i]: mac = tmp[i].split(b'BSSID:')[1]; s+=10
+                if verbose: print(s)
+                if s>=21: 
+                    self.data.append(list([datetime.datetime.utcnow(), freq, mac, np.asarray(rss_data)]))
+                    if verbose: print(self.data[-1])
+                else: print('Incomplete rss msg')
+            except:
+                print('[Error] Could not decode rss data')
+            time.sleep(1/500.) #refresh at 500Hz
 
     def read(self):
         """
         tcpdump should be running
         """
-        if self.isTcpdumpRunning:
-            return self.tcpdump_process.stdout.readline()
-        else:
-            print('[Error] First run tcpdump_start')
+        if not self.tcpdump_alive(): self.tcpdump_start()
+        print(self.tcpdump_process.stdout.readline())
+
+    def terminate(self):
+        self.chopper_process.terminate()
+        #self.tcpdump_process.terminate()
+        self.read_process.terminate()
