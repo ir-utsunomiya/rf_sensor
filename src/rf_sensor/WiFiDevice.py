@@ -66,7 +66,6 @@ class WiFiDevice:
         if self.init_device() == 0: print('\nDevice Initialized')
         else: print('[Error] Device initialization failed')
         
-
     def init_device(self):
         # turn the interface on/off to reset
         if execute_retry("sudo -S ifconfig {:s} down".format(self.iface)) != 0          : return 1
@@ -79,21 +78,14 @@ class WiFiDevice:
         if execute_retry("sudo -S iwconfig {:s} channel 1".format(self.iface)) != 0     : return 1
         return 0
 
-    def chopper_cmd_(self):
-        ts = 1.0*self.chopper_ts/len(self.channels)
-        ret = 0
-        while(not ret):
-            for ch in self.channels:
-                ret = os.system("sudo -S iwconfig {:s} channel {:d}".format(self.iface,ch))
-                if ret != 0 : print('[Error] Channel hopper could not change channel. Are you running as sudo?')
-                time.sleep(ts)
-
+    # Channel Hopping 
+    ## public functions
     def chopper_start(self):
         #self.cmd = "rosrun rf_sensor channel_hopper.py -i {} -t {} -ch {}".format(self.iface,1.*self.chopper_ts," ".join(str(ch) for ch in self.channels))
         
         if self.chopper_process is not None: self.chopper_process.terminate()
         try:
-            self.chopper_process = multiprocessing.Process(target=self.chopper_cmd_)
+            self.chopper_process = multiprocessing.Process(target=self.__chopper)
             self.chopper_process.start()
         except:
             print('[Error] multiprocessing.Process(chopper_run) failed')
@@ -103,7 +95,19 @@ class WiFiDevice:
     
     def chopper_alive(self):
         return self.chopper_process.is_alive()
+    
+    ## private function
+    def __chopper(self):
+        ts = 1.0*self.chopper_ts/len(self.channels)
+        ret = 0
+        while(not ret):
+            for ch in self.channels:
+                ret = os.system("sudo -S iwconfig {:s} channel {:d}".format(self.iface,ch))
+                if ret != 0 : print('[Error] Channel hopper could not change channel. Are you running as sudo?')
+                time.sleep(ts)
 
+    # tcpdump wrapper
+    ## public functions
     def tcpdump_start(self):
         """
         iface must be initialized before with init(iface)
@@ -116,19 +120,32 @@ class WiFiDevice:
     def tcpdump_alive(self):
         return self.tcpdump_process.poll() is None
 
+    # WiFi data decoding
+    ## public functions
     def read_start(self):
-        if not self.tcpdump_alive(): self.tcpdump_start()
-        self.read_process = multiprocessing.Process(target=self.decode)
+        """
+        continuously decodes incomming tcpdump messages and publishes to data list 
+        """
+        if self.tcpdump_alive() is False: self.tcpdump_start()
+        self.read_process = multiprocessing.Process(target=self.__decode)
         self.read_process.start()
         print('RSS messages stored at data')
         return 0
 
+    def read(self):
+        """
+        outputs last message only
+        """
+        if self.tcpdump_alive() is False : self.tcpdump_start()
+        print(self.tcpdump_process.stdout.readline())
+
     def read_alive(self):
         return self.read_process.is_alive()
 
-    def decode(self,verbose=False):
+    ## private function
+    def __decode(self,verbose=False):
         """
-        tcpdump should be running
+        decodes tcpdump message to data list
         """
         while True:
             rss_data = list()
@@ -149,31 +166,37 @@ class WiFiDevice:
                 print('[Error] Could not decode rss data')
             time.sleep(1/500.) #refresh at 500Hz
 
-    def read(self):
-        """
-        tcpdump should be running
-        """
-        if self.tcpdump_alive() is False : self.tcpdump_start()
-        print(self.tcpdump_process.stdout.readline())
-
-    def sample_(self):
-        while True:
-            time.sleep(self.ts)
-            self.data[:] = []
-
+    # samples at a fixed sampling time (ts)
+    ## public functions
     def sample(self):
         if self.read_alive() is False : self.read_start()
         try:
-            self.sample_process = multiprocessing.Process(target=self.sample_)
+            self.sample_process = multiprocessing.Process(target=self.__sample)
             self.sample_process.start()
         except:
             print('[Error] multiprocessing.Process(sample_process) failed')
 
         print('Sampling every {:f} s'.format(self.ts))
         return 0
+    
+    def sample_alive(self):
+        return self.sample_process.is_alive()
 
+    ## private function
+    def __sample(self):
+        while True:
+            time.sleep(self.ts)
+            self.data[:] = []
 
     def terminate(self):
-        self.chopper_process.terminate()
-        #self.tcpdump_process.terminate()
-        self.read_process.terminate()
+        print('Terminating Processes')
+        if self.sample_alive() is True: print('Terminating sample'); self.sample_process.terminate()
+        if self.read_alive() is True: print('Terminating read'); self.read_process.terminate()
+        if self.chopper_alive() is True:  print('Terminating chopper'); self.chopper_process.terminate()
+        if self.tcpdump_alive() is True: 
+            print('Terminating tcpdump')
+            cmd = "sudo kill -9 {:d}".format(self.tcpdump_process.pid)
+            os.system(cmd)
+            if self.tcpdump_alive() is True:
+                print("Could not kill the process, please try")
+                print("    ",cmd)
