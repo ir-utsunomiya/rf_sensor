@@ -30,25 +30,42 @@ def execute_retry(cmd, max_counter = 10):
 class WiFiDevice:
     """
     Base class to listen wireless devices
+
+
+    chopper_start:
+        starts channel hopping if desired
+    tcpdump_start:
+        starts wifi data aquisition
+    read_start:
+        starts tcpdump_start, 
+        extracts main information and stores it in data array
+    sampling:
+        starts read_start
+        clears data every specified sampling time
     """
     def __init__(self,**kwargs):
         self.iface = kwargs.get('iface','wlp5s0')
         self.channels = kwargs.get('channels', (1,6,11))
         self.chopper_ts = kwargs.get('channel_hopper_sampling_time',1.0)
         self.filter = kwargs.get('filter','Beacon')
+        self.ts = kwargs.get('sampling_time',self.chopper_ts)
 
         # filters
         self.filter_cmd = ''
         if self.filter == 'Beacon': self.filter_cmd += ' type mgt subtype beacon'
 
+        # processes
         self.chopper_process = None
         self.tcpdump_process  = None
         self.read_process = None
+        self.sample_process = None
+
+        # variables
+        self.data = multiprocessing.Manager().list()
 
         if self.init_device() == 0: print('\nDevice Initialized')
         else: print('[Error] Device initialization failed')
-
-        self.data = multiprocessing.Manager().list() 
+        
 
     def init_device(self):
         # turn the interface on/off to reset
@@ -136,8 +153,25 @@ class WiFiDevice:
         """
         tcpdump should be running
         """
-        if not self.tcpdump_alive(): self.tcpdump_start()
+        if self.tcpdump_alive() is False : self.tcpdump_start()
         print(self.tcpdump_process.stdout.readline())
+
+    def sample_(self):
+        while True:
+            time.sleep(self.ts)
+            self.data[:] = []
+
+    def sample(self):
+        if self.read_alive() is False : self.read_start()
+        try:
+            self.sample_process = multiprocessing.Process(target=self.sample_)
+            self.sample_process.start()
+        except:
+            print('[Error] multiprocessing.Process(sample_process) failed')
+
+        print('Sampling every {:f} s'.format(self.ts))
+        return 0
+
 
     def terminate(self):
         self.chopper_process.terminate()
