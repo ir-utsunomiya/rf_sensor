@@ -94,7 +94,8 @@ class WiFiDevice:
         return 0
     
     def chopper_alive(self):
-        return self.chopper_process.is_alive()
+        try: return self.chopper_process.is_alive()
+        except: return False
     
     ## private function
     def __chopper(self):
@@ -118,7 +119,8 @@ class WiFiDevice:
         return 0
 
     def tcpdump_alive(self):
-        return self.tcpdump_process.poll() is None
+        try: return self.tcpdump_process.poll() is None
+        except: return False
 
     # WiFi data decoding
     ## public functions
@@ -140,8 +142,9 @@ class WiFiDevice:
         print(self.tcpdump_process.stdout.readline())
 
     def read_alive(self):
-        return self.read_process.is_alive()
-
+        try: return self.read_process.is_alive() is True
+        except: return False
+    
     ## private function
     def __decode(self,verbose=False):
         """
@@ -180,7 +183,8 @@ class WiFiDevice:
         return 0
     
     def sample_alive(self):
-        return self.sample_process.is_alive()
+        try: return self.sample_process.is_alive()
+        except: return False
 
     ## private function
     def __sample(self):
