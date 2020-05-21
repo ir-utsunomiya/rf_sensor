@@ -30,18 +30,28 @@ def execute_retry(cmd, max_counter = 10):
 class WiFiDevice:
     """
     Base class to listen wireless devices
-
-
-    chopper_start:
-        starts channel hopping if desired
-    tcpdump_start:
-        starts wifi data aquisition
-    read_start:
-        starts tcpdump_start, 
-        extracts main information and stores it in data array
-    sampling:
-        starts read_start
-        clears data every specified sampling time
+    Parameters:
+        iface: (string) wireless interface name. Check available interfaces and their names using `iwconfig`
+        channels: (list of ints) channels to listen (1-11)
+        chopper_ts: (int/float) sampling time in seconds for channel hopper to go through all channels. If ts:1s and there are 2 channels, each channel gets 0.5s
+        filter: (string) filters for tcpdump. default: Beacon, listens only to beacon frames. 
+        ts: (int/float) sampling time in seconds for sample functions 
+    Functions:
+        chopper_start:
+            starts channel hopping if desired
+        tcpdump_start:
+            starts wifi data aquisition
+        read_start:
+            starts tcpdump_start, 
+            extracts main information and stores it in data array
+        sample:
+            starts read_start
+            clears data every specified sampling time
+        *_alive: 
+            * is chopper/tcpdump/read/sample
+            checks if process has started
+        terminate:
+            ends all processes
     """
     def __init__(self,**kwargs):
         self.iface = kwargs.get('iface','wlp5s0')
@@ -51,8 +61,7 @@ class WiFiDevice:
         self.ts = kwargs.get('sampling_time',self.chopper_ts)
 
         # filters
-        self.filter_cmd = ''
-        if self.filter == 'Beacon': self.filter_cmd += ' type mgt subtype beacon'
+        if self.filter == 'Beacon': self.filter = ' type mgt subtype beacon'
 
         # processes
         self.chopper_process = None
@@ -113,7 +122,7 @@ class WiFiDevice:
         """
         iface must be initialized before with init(iface)
         """
-        cmd = 'sudo -S tcpdump -i {:s} -ne --time-stamp-precision=micro -l --immediate-mode {:s}'.format(self.iface,self.filter_cmd)
+        cmd = 'sudo -S tcpdump -i {:s} -ne --time-stamp-precision=micro -l --immediate-mode {:s}'.format(self.iface,self.filter)
         self.tcpdump_process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)
         print('tcpdump process initialized')
         return 0
