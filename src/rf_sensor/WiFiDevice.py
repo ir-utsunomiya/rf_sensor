@@ -85,8 +85,8 @@ class WiFiDevice:
         if execute_retry("sudo -S ifconfig {:s} down".format(self.iface)) != 0          : return 1
         if execute_retry("sudo -S iwconfig {:s} mode monitor".format(self.iface)) != 0  : return 1
         if execute_retry("sudo -S ifconfig {:s} up".format(self.iface)) != 0            : return 1
-        # set interface to default channel (1)
-        if execute_retry("sudo -S iwconfig {:s} channel 1".format(self.iface)) != 0     : return 1
+        # set interface to first channel in channels
+        if execute_retry("sudo -S iwconfig {:s} channel {:d}".format(self.iface,self.channels[0])) != 0     : return 1
         return 0
 
     # Channel Hopping 
