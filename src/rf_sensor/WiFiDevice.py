@@ -59,6 +59,10 @@ class WiFiDevice:
         self.chopper_ts = kwargs.get('channel_hopper_sampling_time',1.0)
         self.filter = kwargs.get('filter','Beacon')
         self.ts = kwargs.get('sampling_time',self.chopper_ts)
+        self.data = kwargs.get('data',None)
+
+        # variables
+        if self.data is None: self.data = multiprocessing.Manager().list()
 
         # filters
         if self.filter == 'Beacon': self.filter = ' type mgt subtype beacon'
@@ -69,9 +73,7 @@ class WiFiDevice:
         self.read_process = None
         self.sample_process = None
 
-        # variables
-        self.data = multiprocessing.Manager().list()
-
+        
         if self.init_device() == 0: print('\nDevice Initialized')
         else: print('[Error] Device initialization failed')
         
