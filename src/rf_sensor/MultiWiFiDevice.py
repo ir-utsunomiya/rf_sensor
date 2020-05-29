@@ -21,7 +21,7 @@ from rf_sensor.WiFiDevice import WiFiDevice
 class MultiWiFiDevice:
     def __init__(self,**kwargs):
         self.iface_list    = kwargs.pop('iface_list',('wlp5s0',))
-        self.channels_list = kwargs.pop('channel_list', (1,))
+        self.channel_list = kwargs.pop('channel_list', (1,))
         self.data = kwargs.pop('data',None)
         self.ts = kwargs.pop('ts',1.0)
 
@@ -33,9 +33,9 @@ class MultiWiFiDevice:
         kwargs['data']=self.data # so all devices share the same list
 
         # WiFi devices
-        assert len(self.iface_list)==len(self.channels_list)
+        assert len(self.iface_list)==len(self.channel_list)
         self.wifi_devices = list()
-        for iface, channel in zip(self.iface_list, self.channels_list):
+        for iface, channel in zip(self.iface_list, self.channel_list):
             kwargs_i = kwargs
             kwargs_i['iface'] = iface
             kwargs_i['channels'] = (channel,)
