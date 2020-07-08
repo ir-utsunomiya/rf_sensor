@@ -107,9 +107,9 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 11457
+      Max Intensity: 15180
       Min Color: 0; 0; 0
-      Min Intensity: 302
+      Min Intensity: 301
       Name: LaserScan
       Position Transformer: XYZ
       Queue Size: 10
@@ -117,7 +117,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.5
       Style: Flat Squares
-      Topic: /scan
+      Topic: /urg_front/scan
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -219,16 +219,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 278.5602111816406
+      Distance: 138.71878051757812
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 53.270606994628906
-        Y: 50.67020034790039
-        Z: -28.38664436340332
+        X: 11.804662704467773
+        Y: -2.0806467533111572
+        Z: -28.43292999267578
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -237,7 +237,7 @@ Visualization Manager:
       Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.5154032707214355
+      Yaw: 2.080402374267578
     Saved: ~
 Window Geometry:
   Displays:
@@ -256,4 +256,4 @@ Window Geometry:
     collapsed: false
   Width: 2556
   X: 879
-  Y: 382
+  Y: 352
