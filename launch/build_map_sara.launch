@@ -1,0 +1,38 @@
+<launch>
+  <!-- parameters and arguments -->
+  <param name="use_sim_time" value="true" />
+  <arg name="bag_path" default="/tmp" />
+  <arg name="bag_name" default="hic1" />
+
+  <!-- rosbag and required tf -->
+  <!-- Playback rosbag -->
+  <?ignore
+  <node name="player" pkg="rosbag" type="play" output="screen" args="--clock --rate=1 $(arg bag_path)/$(arg bag_name).bag" />
+  ?>
+  <node name="odom2tf" pkg="message_transforms" type="encoder2tf" /> <!-- nav_odom to tf -->
+  <node name="link_base_laser" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 base_link urg_front" />
+
+  <?ignore
+  <node name="link_base_vlp" pkg="tf2_ros" type="static_transform_publisher" args="-0.37 0.05 1.2 -1.57079 0 0 base_link velodyne" />
+  ?>
+
+  <!-- slam and map saver -->
+  <node name="slam" pkg="gmapping" type="slam_gmapping" output="screen">
+    <remap from="scan" to="/urg_front/scan" />
+    <param name="particles" value="30" />
+    <param name="resampleThreshold" value="0.75"/>
+    <param name="delta" value="0.25"/>
+    <param name="linearUpdate" value="0.1"/>
+    <param name="angularUpdate" value="0.01"/>
+  </node> 
+
+  <!-- rviz -->
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find rf_sensor)/rviz/build_map.rviz" />
+
+  <!-- 
+  To save the map, run 
+  rosrun map_server map_saver -f <map_name> 
+  once all the data has been processed
+  -->
+
+</launch>
