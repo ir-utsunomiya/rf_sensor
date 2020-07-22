@@ -19,10 +19,10 @@ import numpy as np
 
 def execute_retry(cmd, max_counter = 10):
     counter = 0
-    print("{:40s} ".format(cmd), end="\t")
+    print("{:40s} ".format(cmd))
     while os.system(cmd):
         counter += 1
-        print("\n[{:02d}/{:02d}] {:s} Failed".format(counter, max_counter, cmd),end="")
+        print("\n[{:02d}/{:02d}] {:s} Failed".format(counter, max_counter, cmd))
         if counter >  max_counter : print('\n[Error] Max trial reached'); return 1
     print("OK")
     return 0

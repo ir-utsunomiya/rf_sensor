@@ -13,7 +13,7 @@ class RSS():
         self.ns         = rospy.get_name()
         self.frame_id   = rospy.get_param('~frame_id','rss')
         rss_topic       = rospy.get_param('~rss_topic','rss')
-        if len(self.ns) >= 1: rss_topic = self.ns+'/'+rss_topic
+        #if len(self.ns) >= 1: rss_topic = self.ns+'/'+rss_topic
         ## WiFi Device param
         iface           = rospy.get_param('~iface','wlp5s0')
         channels        = rospy.get_param('~channels',[1, 6, 11])
@@ -42,7 +42,7 @@ class RSS():
         first = True
         self.wifidevice.chopper_start()
         self.wifidevice.tcpdump_start()
-
+	m = None
         while not rospy.is_shutdown():
             try:
                 rss_msg = Rss()
@@ -50,7 +50,10 @@ class RSS():
                 rss_msg.header.stamp = rospy.Time.now()
                 rss_msg.header.frame_id = self.frame_id
 
-                m = self.wifidevice.read()
+                while (m is None): 
+			m = self.wifidevice.tcpdump_process.stdout.readline()
+			print('empty',m)
+
                 string = m.decode().split(' ')
                 c = 0
                 rss_msg.data = list()
