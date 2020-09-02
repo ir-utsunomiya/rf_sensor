@@ -2,7 +2,7 @@
 
 import rospy
 import numpy as np
-from rf_sensor.msg import Rss
+from rf_msgs.msg import Rss
 from rf_sensor.WiFiDevice import WiFiDevice
 
 class RSS():
@@ -44,13 +44,13 @@ class RSS():
         self.wifidevice.tcpdump_start()
 	m = None
         while not rospy.is_shutdown():
+            m = None
             try:
                 rss_msg = Rss()
-                rss_msg.header.seq =+ seq
                 rss_msg.header.stamp = rospy.Time.now()
                 rss_msg.header.frame_id = self.frame_id
 
-                while (m is None): 
+                while (m is None):
 			m = self.wifidevice.tcpdump_process.stdout.readline()
 			print('empty',m)
 
@@ -63,6 +63,7 @@ class RSS():
                     if 'dBm'   in string[i]: rss_msg.data.append(np.int8(string[i][:-3])); c+=1;
                 if c>200: #data is complete
                     #Publish msg
+                    rss_msg.header.seq =+ seq
                     self.pub_rss.publish(rss_msg)
                 else:
                     rospy.loginfo('[rss] incomplete data')
