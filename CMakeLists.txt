@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  message_generation
+  rf_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -24,15 +24,16 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_python_setup()
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  Rss.msg
-)
+#add_message_files(
+#  FILES
+#  Rss.msg
+#)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
   std_msgs
+  rf_msgs
 )
 
 ###################################
@@ -41,7 +42,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES acquire_pcap
-  CATKIN_DEPENDS rospy std_msgs message_runtime
+  CATKIN_DEPENDS rospy std_msgs rf_msgs
 #  DEPENDS system_lib
 )
 
