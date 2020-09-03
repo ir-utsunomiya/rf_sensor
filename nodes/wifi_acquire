@@ -12,7 +12,7 @@ class RSS():
         ## ros param
         self.ns         = rospy.get_name()
         self.frame_id   = rospy.get_param('~frame_id','rss')
-        rss_topic       = rospy.get_param('~rss_topic','rss')
+        rss_topic       = rospy.get_param('~rss_topic',self.frame_id)
         #if len(self.ns) >= 1: rss_topic = self.ns+'/'+rss_topic
         ## WiFi Device param
         iface           = rospy.get_param('~iface','wlp5s0')
