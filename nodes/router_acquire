@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 
 from socket import *
-from rf_sensor.msg import Rss
+from rf_msgs.msg import Rss
 
 def open_socket(ip,port):
     s=socket(AF_INET, SOCK_DGRAM)
@@ -18,7 +18,7 @@ class RSS():
         ##ros param
         self.ns = rospy.get_namespace()
         self.rss_port = rospy.get_param('~rss_port',8801)
-        self.rss_ip   = rospy.get_param('~rss_ip','160.12.106.255')
+        self.rss_ip   = rospy.get_param('~rss_ip','192.168.1.255')
         self.frame_id = rospy.get_param('~frame_id','rss')
         rss_topic = rospy.get_param('~rss_topic',self.ns+'rss')
 
