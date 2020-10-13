@@ -3,7 +3,7 @@ import tf
 import numpy as np
 import pandas as pd
 
-from .msg import Rss
+from rf_msgs.msg import Rss
 
 """
 load all rss info from rosbag
