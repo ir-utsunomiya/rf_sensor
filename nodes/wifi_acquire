@@ -42,25 +42,25 @@ class RSS():
         first = True
         self.wifidevice.chopper_start()
         self.wifidevice.tcpdump_start()
-	m = None
+        m = None
         while not rospy.is_shutdown():
-            m = None
             try:
                 rss_msg = Rss()
                 rss_msg.header.stamp = rospy.Time.now()
                 rss_msg.header.frame_id = self.frame_id
 
+                m = self.wifidevice.tcpdump_process.stdout.readline()
                 while (m is None):
-			m = self.wifidevice.tcpdump_process.stdout.readline()
-			print('empty',m)
+                    m = self.wifidevice.tcpdump_process.stdout.readline()
+                    print('empty',m)
 
                 string = m.decode().split(' ')
                 c = 0
                 rss_msg.data = list()
                 for i in range(len(string)):
-                    if 'MHz'   in string[i]: rss_msg.freq = np.int(string[i-1]); c+=100;
-                    if 'BSSID' in string[i]: rss_msg.mac_address = str(string[i][6:]); c+=100;
-                    if 'dBm'   in string[i]: rss_msg.data.append(np.int8(string[i][:-3])); c+=1;
+                    if 'MHz'   in string[i]: rss_msg.freq = np.int(string[i-1]); c+=100
+                    if 'BSSID' in string[i]: rss_msg.mac_address = str(string[i][6:]); c+=100
+                    if 'dBm'   in string[i]: rss_msg.data.append(np.int8(string[i][:-3])); c+=1
                 if c>200: #data is complete
                     #Publish msg
                     rss_msg.header.seq =+ seq
@@ -75,9 +75,9 @@ class RSS():
 
             except:
                 rospy.loginfo('[rss] corrupted packet')
-                rospy.loginfo(m[0].decode())
+                rospy.loginfo(m)
                 first = True
-        s.close()
+        #s.close()
 
 if __name__ == '__main__':
     rss = RSS()
