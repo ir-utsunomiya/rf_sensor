@@ -1,6 +1,10 @@
 # rf_sensor
 ROS node for radio frequency based sensors
 
+
+Python scripts on [src/rf_sensor](https://github.com/ir-utsunomiya/rf_sensor/tree/main/src) can be used to run rf_sensor without ROS. <br/>
+See [notebooks/Standalone rf_sensor.ipynb](https://github.com/ir-utsunomiya/rf_sensor/blob/main/notebooks/Standalone%20rf_sensor.ipynb) for examples on how to use them.
+
 ## Dependency
 * ROS node [`rf_msgs`](https://github.com/ir-utsunomiya/rf_msgs) containing ROS message definitions
 
