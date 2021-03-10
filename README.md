@@ -1,6 +1,9 @@
 # rf_sensor
 ROS node for radio frequency based sensors
 
+## Dependency
+* ROS node [`rf_msgs`](https://github.com/ir-utsunomiya/rf_msgs) containing ROS message definitions
+
 ## Running iwconfig and ifconfig as passwordless sudo
 It is recommended to modify sudoers to allow your user to run ifconfig and iwconfig as sudo without password.
 If the node is run with rosrun there are no issues. Password is asked once.
