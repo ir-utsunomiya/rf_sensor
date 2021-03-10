@@ -2,9 +2,9 @@
   <!-- parameters and arguments -->
   <!-- main parameters -->
   <param name="use_sim_time" value="true" />
-  <arg name="bag_path" default="/mnt/data/bags/HIC/20200702" />
-  <arg name="map_name" default="corridor" />
-  <arg name="bag_name" default="hic1" />
+  <arg name="bag_path" default="/mnt/data/bags/utsunomiya" />
+  <arg name="map_name" default="real" />
+  <arg name="bag_name" default="wifi0708_2020-07-08-15-56-45_0" />
   <!-- amcl parameters -->
   <arg name="update_min_d"        default="0.30" />
   <arg name="recovery_alpha_slow" default="0.001" />

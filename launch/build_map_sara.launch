@@ -2,7 +2,7 @@
   <!-- parameters and arguments -->
   <param name="use_sim_time" value="true" />
   <arg name="bag_path" default="/tmp" />
-  <arg name="bag_name" default="hic1" />
+  <arg name="bag_name" default="wifi0708_2020-07-08-15-56-45_0" />
 
   <!-- rosbag and required tf -->
   <!-- Playback rosbag -->

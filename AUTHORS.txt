@@ -1,0 +1,11 @@
+rf_sensor is developed by the instrumentation and robotics laboratory (計測・ロボット工学 研究室) at utsunomiya university
+https://www.ir.utsunomiya-u.ac.jp/
+
+rf_sensor authors:
+
+Core developer:
+- Renato Miyagusuku (miyagusuku at cc.utsunomiya-u.ac.jp)
+
+Constributors:
+- https://github.com/ir-utsunomiya/rf_sensor/graphs/contributors
+

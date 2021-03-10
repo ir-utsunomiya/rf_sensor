@@ -1,6 +1,6 @@
 BSD 3-Clause License
 
-Copyright (c) 2019, Renato Miyagusuku
+Copyright (c) 2019 Renato Miyagusuku, the rf_sensor authors (see AUTHORS.txt)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
