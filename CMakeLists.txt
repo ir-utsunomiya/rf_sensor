@@ -67,6 +67,7 @@ catkin_install_python(PROGRAMS
   src/rf_sensor/WiFiDevice.py
   nodes/router_acquire
   nodes/wifi_acquire
+  nodes/wifi_acquire_shm
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

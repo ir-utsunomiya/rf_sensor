@@ -1,4 +1,4 @@
-# Copyright (c) 2019, the rf_sensor authors (see AUTHORS.txt)
+# Copyright (c) 2022, the rf_sensor authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 #!/usr/bin/env python3
@@ -115,7 +115,7 @@ class WiFiDeviceSHM(WiFiDevice):
           try:
             index = self.mac_dict[datum[2]]
           except:
-            print("Mac Address not found in dictionary", datum[2])
+            #print("Mac Address not found in dictionary", datum[2])
             # not found in the dictionary
             if self.update_dict:
               self.mac_dict[datum[2]] = nap
@@ -124,7 +124,7 @@ class WiFiDeviceSHM(WiFiDevice):
               nap += 1
               # TODO: ADD MAC TO THE DICTIONARY YAML FILE
           if index is not None:
-            print(index, datum[3][0])
+            #print(index, datum[3][0])
             z[index] += datum[3][0]
             count[index] += 1
         self.data[:] = []
