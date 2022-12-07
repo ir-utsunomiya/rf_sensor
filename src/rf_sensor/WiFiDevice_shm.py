@@ -30,6 +30,7 @@ import yaml
 
 MAX_WIFI_LEN = 500
 MIN_READINGS = 5
+DEFAULT_WIFI_SHM_ID = 1001
 
 def read_macdict(maclist):
   with open(maclist, "r") as stream:
@@ -61,7 +62,7 @@ class wifid(ctypes.Structure):
 class WiFiDeviceSHM(WiFiDevice):
   def __init__(self, **kwargs):
     WiFiDevice.__init__(self, **kwargs)
-    self.shm_id = kwargs.get('shm_id', 1001)
+    self.shm_id = kwargs.get('shm_id', DEFAULT_WIFI_SHM_ID)
     self.mac_dict = read_macdict(kwargs.get('mac_file', "/tmp/maclist.txt"))
     self.update_dict = kwargs.get('update_dict', False)  # True for SLAM, False for Localization
 

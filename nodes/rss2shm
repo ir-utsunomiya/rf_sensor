@@ -1,0 +1,111 @@
+#!/usr/bin/python
+
+# Copyright (c) 2022, the rf_sensor authors (see AUTHORS.txt)
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+import rospy
+import numpy as np
+from rf_msgs.msg import Rss
+from rf_sensor.WiFiDevice_shm import *
+
+class Rss2Shm:
+  def __init__(self):
+    rospy.init_node('rss2shm', anonymous=True)
+
+    # ros param
+    self.ns = rospy.get_name()
+    self.rss_topic = rospy.get_param('~rss_topic', '/rss1')
+    self.shm_id = rospy.get_param('~shm_id', DEFAULT_WIFI_SHM_ID)
+    self.rate = rospy.get_param('~rate', 1)
+    self.mac_file = rospy.get_param('mac_file', "/tmp/maclist.txt")
+
+    self.mac_dict = read_macdict(self.mac_file)
+
+    # with open(self.mac_file, "r") as stream:
+    #  try:
+    #    macs = [bytes(line.rstrip(), 'utf-8') for line in stream]
+    #    self.mac_dict = dict(zip(macs, range(len(macs))))
+    #  except:
+    #    print("Error reading list")
+    #    self.mac_dict = None
+
+    # if len(self.ns) >= 1: rss_topic = self.ns+'/'+rss_topic
+    # parameter info
+    rospy.loginfo('{:15s} {:s}'.format('rss_topic', self.rss_topic))
+    rospy.loginfo('{:15s} {:d}'.format('shm_id', self.shm_id))
+    rospy.loginfo('{:15s} {:d}'.format('rate', self.rate))
+    rospy.loginfo('{:15s} {:s}'.format('mac_file', self.mac_file))
+
+    for key, value in self.mac_dict.items():
+      print(key, ' : ', value)
+
+    # init variables
+    self.seq = 0
+    self.data = list()
+    self.nap = len(self.mac_dict)
+    self.rate = rospy.Rate(self.rate)
+
+    # init shm (system v ipc)
+    libc_path = ctypes.util.find_library("c")
+    libc = ctypes.CDLL(libc_path)
+    shmget = libc.shmget
+    shmat = libc.shmat
+    shmat.restype = ctypes.c_long  # default does not work for 64bit sys
+
+    size = ctypes.sizeof(wifid)
+    mem_id = shmget(self.shm_id, size, sysv_ipc.IPC_CREAT | 0o666)
+    print('shm_id={:d}, mem_id={:d}'.format(self.shm_id, mem_id))
+    shmptr = shmat(mem_id, None, 0)
+    print('pointer', shmptr)
+    self.wifid_ptr = ctypes.cast(shmptr, ctypes.POINTER(wifid))
+
+    # Publishers
+    self.sub_rss = rospy.Subscriber(self.rss_topic, Rss, self.rssCallback)
+
+  def rssCallback(self, rss_data):
+    self.data.append(rss_data)
+
+  def sample(self):
+    if len(self.data) > 5:
+      z = np.zeros(MAX_WIFI_LEN)
+      count = np.zeros(MAX_WIFI_LEN)
+
+      for datum in self.data:
+        index = None
+        try:
+          index = self.mac_dict[datum.mac_address]
+        except:
+          # TODO: update maclist
+          print("address not found in the dict", datum.mac_address)
+        if index is not None:
+          z[index] += np.mean(datum.data)
+          count[index] += 1.
+      self.data = list()  # clear buffer
+
+      # publish shm
+      self.wifid_ptr.contents.seq = self.seq
+      self.wifid_ptr.contents.nap = self.nap
+      index = np.where(z != 0)[0]
+      for i in index:
+          # 100 is added so values are from zero to 100
+        self.wifid_ptr.contents.data[i] = 100+1.*z[i]/count[i]
+
+      # update seq
+      self.seq += 1
+      print('rss vector', z)
+    else:
+      rospy.loginfo('Not enough samples')
+    return 0
+
+  def run(self):
+    while not rospy.is_shutdown():
+      # try:
+      self.sample()
+      # except:
+      #  rospy.loginfo('[rss] Error in RSS.sample')
+      # sleep
+      self.rate.sleep()
+
+
+if __name__ == '__main__':
+  rss = Rss2Shm()
+  rss.run()

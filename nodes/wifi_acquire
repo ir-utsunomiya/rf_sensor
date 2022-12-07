@@ -54,9 +54,8 @@ class RSS():
         rss_msg.header.frame_id = self.frame_id
 
         #print("reading line")
-        m = None
-        #m = self.wifidevice.tcpdump_process.stdout.readline()
-        #print("line read")
+        m = self.wifidevice.tcpdump_process.stdout.readline()
+        print("line read")
         while (m is None):
           m = self.wifidevice.tcpdump_process.stdout.readline()
           print("empty", m)
