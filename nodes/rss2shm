@@ -86,12 +86,13 @@ class Rss2Shm:
       self.wifid_ptr.contents.nap = self.nap
       index = np.where(z != 0)[0]
       for i in index:
-          # 100 is added so values are from zero to 100
-        self.wifid_ptr.contents.data[i] = 100+1.*z[i]/count[i]
+        # 100 is added so values are from zero to 255
+        z[i] = (z[i]/(95*count[i])+1.0)*255
+        self.wifid_ptr.contents.data[i] = z[i]
 
       # update seq
       self.seq += 1
-      print('rss vector', z)
+      print('rss vector', z[:self.nap])
     else:
       rospy.loginfo('Not enough samples')
     return 0
