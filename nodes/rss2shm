@@ -18,7 +18,7 @@ class Rss2Shm:
     self.rate = rospy.get_param('~rate', 1)
     self.mac_file = rospy.get_param('mac_file', "/tmp/maclist.txt")
 
-    self.mac_dict = read_macdict(self.mac_file)
+    self.mac_dict = read_macdict(self.mac_file, in_bytes=False)
 
     # with open(self.mac_file, "r") as stream:
     #  try:

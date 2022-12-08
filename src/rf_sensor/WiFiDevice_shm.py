@@ -32,10 +32,13 @@ MAX_WIFI_LEN = 500
 MIN_READINGS = 5
 DEFAULT_WIFI_SHM_ID = 1001
 
-def read_macdict(maclist):
+def read_macdict(maclist, in_bytes=True):
   with open(maclist, "r") as stream:
     try:
-      macs = [bytes(line.rstrip(), 'utf-8') for line in stream]
+      if in_bytes:
+        macs = [bytes(line.rstrip(), 'utf-8') for line in stream]
+      else:
+        macs = [line.rstrip() for line in stream]
       mac_dict = dict(zip(macs, range(len(macs))))
     except:
       print("Error reading list")
