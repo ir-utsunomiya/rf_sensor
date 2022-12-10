@@ -25,6 +25,11 @@ import numpy as np
 from rf_sensor.WiFiDevice import WiFiDevice
 import ctypes
 import ctypes.util
+import pprint
+
+sys.path.append("/home/sohshi/anaconda3/lib/python3.9/site-packages")
+
+pprint.pprint(sys.path)
 import sysv_ipc
 import yaml
 

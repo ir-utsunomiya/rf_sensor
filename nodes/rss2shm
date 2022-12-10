@@ -13,9 +13,9 @@ class Rss2Shm:
 
     # ros param
     self.ns = rospy.get_name()
-    self.rss_topic = rospy.get_param('~rss_topic', '/rss1')
+    self.rss_topic = rospy.get_param('~rss_topic', '/rss2')
     self.shm_id = rospy.get_param('~shm_id', DEFAULT_WIFI_SHM_ID)
-    self.rate = rospy.get_param('~rate', 1)
+    self.rate = rospy.get_param('~rate', 0.5)
     self.mac_file = rospy.get_param('mac_file', "/tmp/maclist.txt")
 
     self.mac_dict = read_macdict(self.mac_file, in_bytes=False)
@@ -32,7 +32,7 @@ class Rss2Shm:
     # parameter info
     rospy.loginfo('{:15s} {:s}'.format('rss_topic', self.rss_topic))
     rospy.loginfo('{:15s} {:d}'.format('shm_id', self.shm_id))
-    rospy.loginfo('{:15s} {:d}'.format('rate', self.rate))
+    rospy.loginfo('{:15s} {:f}'.format('rate', self.rate))
     rospy.loginfo('{:15s} {:s}'.format('mac_file', self.mac_file))
 
     for key, value in self.mac_dict.items():
