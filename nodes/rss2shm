@@ -58,7 +58,7 @@ class Rss2Shm:
     print('pointer', shmptr)
     self.wifid_ptr = ctypes.cast(shmptr, ctypes.POINTER(wifid))
 
-    # Publishers
+    # Subscriber
     self.sub_rss = rospy.Subscriber(self.rss_topic, Rss, self.rssCallback)
 
   def rssCallback(self, rss_data):
