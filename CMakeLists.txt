@@ -69,6 +69,7 @@ catkin_install_python(PROGRAMS
   nodes/wifi_acquire
   nodes/wifi_acquire_shm
   nodes/rss2shm
+  nodes/rss2vec
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
