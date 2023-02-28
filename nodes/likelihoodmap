@@ -1,0 +1,73 @@
+# Copyright (c) 2023, the rf_sensor authors (see AUTHORS.txt)
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+#!/usr/bin/python
+
+import rospy
+import numpy as np
+import cv2
+from std_msgs.msg import UInt8MultiArray
+
+import matplotlib.pyplot as plt
+
+class LikelihoodMap():
+  def __init__(self):
+    rospy.init_node('rss2vec', anonymous=True)
+
+    # ros param
+    self.ns = rospy.get_name()
+    parent_path = rospy.get_param('~path', "/mnt/current_data/mech/wifimap")
+    vec_topic = rospy.get_param('~vec_topic', 'rss_vec')
+    self.rate = rospy.Rate(1)
+    # Subscriber
+    self.sub_vec = rospy.Subscriber(vec_topic, UInt8MultiArray, self.vecCallback)
+
+    # Read wifimapinfo
+    u, v, res, nap = np.loadtxt(parent_path+"/wifi_map_info.txt")
+    # convert to u,v,nap to int
+    u, v, self.nap = int(u), int(v), int(nap)
+    # init map as a np.array
+    self.wifi_map = np.zeros((v, u, self.nap))
+    self.wifi_map_sd = np.zeros((v, u, 1))
+
+    # read map info from image
+    for ap in range(self.nap):
+      self.wifi_map[:, :, ap] = cv2.imread(
+          "{:s}/wifimap{:03d}.ppm".format(parent_path, ap))[:, :, 0].astype(np.uint8)
+    # read var map info from image
+    self.wifi_map_sd[:, :, 0] = cv2.imread(
+        "{:s}/wifisd.ppm".format(parent_path, ap))[:, :, 0].astype(np.uint8)
+    # convert map data to float
+    self.wifi_map = self.wifi_map.astype(np.float64)
+    self.wifi_map_sd = self.wifi_map_sd.astype(np.float64)
+    self.prob = np.zeros((v, u))
+
+    # parameter info
+    rospy.loginfo('{:15s} {:s}'.format('vec_topic', vec_topic))
+    rospy.loginfo('{:15s} {:d}x{:d} px'.format('Map dimensions', u, v))
+    rospy.loginfo('{:15s} {:d}'.format('# access points', self.nap))
+
+  def vecCallback(self, vec_data):
+    z = [int(datum) for datum in vec_data.data]
+    z = np.asarray(z).astype(np.float16)
+    # def likelihood_map(z,wifi_map, wifi_map_sd):
+    logsqrt2pi = 0.5*np.log(2*np.pi)
+    sd_nap = np.matmul(self.wifi_map_sd, np.ones((1, self.nap)))
+    logerr = -np.log(sd_nap) - logsqrt2pi - 0.5*((self.wifi_map-z)/sd_nap)**2
+    # joint likelihood =  exp(sum(alphai*logi)), with sum(alphai)=1
+    alpha = z/np.sum(z)
+    logtot = np.matmul(logerr, alpha[:, None])
+    self.prob = np.exp(logtot[:, :, 0])
+    #cv2.imshow('likelihood_map', prob)
+
+    #im = plt.imshow(self.prob, vmin=0, vmax=2)
+    plt.imsave('/tmp/likelihood.png', self.prob)
+
+  def run(self):
+    while not rospy.is_shutdown():
+      self.rate.sleep()
+
+
+if __name__ == '__main__':
+  rss = LikelihoodMap()
+  rss.run()
