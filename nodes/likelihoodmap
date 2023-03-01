@@ -10,6 +10,7 @@ from std_msgs.msg import UInt8MultiArray
 from sensor_msgs.msg import Image as sensorImage
 import cv_bridge
 from PIL import Image
+from nav_msgs.msg import OccupancyGrid
 
 import matplotlib.pyplot as plt
 
@@ -22,12 +23,16 @@ class LikelihoodMap():
     parent_path = rospy.get_param('~path', "/mnt/current_data/mech/wifimap")
     vec_topic = rospy.get_param('~vec_topic', 'rss_vec')
     image_topic = rospy.get_param('~image_topic', 'rss_likelihood')
+    prob_topic = rospy.get_param('~prob_topic', 'rss_probmap')
+    frame_id = rospy.get_param('~frame_id', 'map')
+
     self.rate = rospy.Rate(1)
 
     # Subscriber
     self.sub_vec = rospy.Subscriber(vec_topic, UInt8MultiArray, self.vecCallback)
     # Publisher
     self.pub_image = rospy.Publisher(image_topic, sensorImage, queue_size=1)
+    self.pub_prob = rospy.Publisher(prob_topic, OccupancyGrid, queue_size=1)
 
     # Read wifimapinfo
     u, v, res, nap = np.loadtxt(parent_path+"/wifi_map_info.txt")
@@ -57,6 +62,20 @@ class LikelihoodMap():
     self.im_msg.is_bigendian = False
     self.im_msg.step = 3*self.im_msg.width
 
+    # initialize likelihood map
+    self.pmap = OccupancyGrid()
+    self.pmap.header.frame_id = frame_id
+    self.pmap.info.resolution = res  # The map resolution [m/cell]
+    self.pmap.info.width = v  # Map width [cells]
+    self.pmap.info.height = u  # Map height [cells]
+    # The origin of the map [m, m, rad].  This is the real-world pose of the
+    # cell (0,0) in the map.
+    # center of the map is considered (0,0)
+    self.pmap.info.origin.position.x = v*res/2.0
+    self.pmap.info.origin.position.y = u*res/2.0
+    self.pmap.info.origin.orientation.w = 0.
+    self.pmap.info.origin.orientation.z = 1.
+
     # parameter info
     rospy.loginfo('{:15s} {:s}'.format('vec_topic', vec_topic))
     rospy.loginfo('{:15s} {:d}x{:d} px'.format('Map dimensions', u, v))
@@ -80,6 +99,11 @@ class LikelihoodMap():
     self.im_msg.header.stamp = rospy.Time.now()
     self.im_msg.data = np.array(im_data).tobytes()
     self.pub_image.publish(self.im_msg)
+
+    # Publish Occ Grid
+    self.pmap.header.stamp = self.im_msg.header.stamp
+    self.pmap.data = np.asarray(100*self.prob/np.max(self.prob), dtype=np.int8).T.flatten()
+    self.pub_prob.publish(self.pmap)
 
   def run(self):
     while not rospy.is_shutdown():
