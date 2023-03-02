@@ -6,6 +6,8 @@
 import rospy
 import numpy as np
 import cv2
+import yaml
+
 from std_msgs.msg import UInt8MultiArray
 from sensor_msgs.msg import Image as sensorImage
 import cv_bridge
@@ -35,29 +37,32 @@ class LikelihoodMap():
     self.pub_prob = rospy.Publisher(prob_topic, OccupancyGrid, queue_size=1)
 
     # Read wifimapinfo
-    u, v, res, nap = np.loadtxt(parent_path+"/wifi_map_info.txt")
-    # convert to u,v,nap to int
-    u, v, self.nap = int(u), int(v), int(nap)
-    # init map as a np.array
-    self.wifi_map = np.zeros((v, u, self.nap))
-    self.wifi_map_sd = np.zeros((v, u, 1))
+    with open("{:s}/wifi_map_info.yaml".format(parent_path), 'r') as f:
+      wmap_info = yaml.safe_load(f)
+    self.nap = wmap_info['nap']
+    width = wmap_info['dimension'][0]  # x axis
+    height = wmap_info['dimension'][1]  # y axis
 
-    # read map info from image
+    # init map as a np.array ()
+    self.wifi_map = np.zeros((height, width, self.nap))
+    self.wifi_map_sd = np.zeros((height, width, 1))
+
+    # read wifi map data (signal strength) from images
     for ap in range(self.nap):
       self.wifi_map[:, :, ap] = cv2.imread(
           "{:s}/wifimap{:03d}.ppm".format(parent_path, ap))[:, :, 0].astype(np.uint8)
-    # read var map info from image
+    # read wifi map data (standard deviation) from image
     self.wifi_map_sd[:, :, 0] = cv2.imread(
         "{:s}/wifisd.ppm".format(parent_path, ap))[:, :, 0].astype(np.uint8)
     # convert map data to float
     self.wifi_map = self.wifi_map.astype(np.float64)
     self.wifi_map_sd = self.wifi_map_sd.astype(np.float64)
-    self.prob = np.zeros((v, u))
+    self.prob = np.zeros((height, width))
 
     # initialize likelihood image
     self.im_msg = sensorImage()
-    self.im_msg.height = v
-    self.im_msg.width = u
+    self.im_msg.height = height
+    self.im_msg.width = width
     self.im_msg.encoding = 'rgb8'
     self.im_msg.is_bigendian = False
     self.im_msg.step = 3*self.im_msg.width
@@ -65,20 +70,17 @@ class LikelihoodMap():
     # initialize likelihood map
     self.pmap = OccupancyGrid()
     self.pmap.header.frame_id = frame_id
-    self.pmap.info.resolution = res  # The map resolution [m/cell]
-    self.pmap.info.width = v  # Map width [cells]
-    self.pmap.info.height = u  # Map height [cells]
+    self.pmap.info.resolution = wmap_info['resolution']  # The map resolution [m/cell]
+    self.pmap.info.width = width  # Map width [cells]
+    self.pmap.info.height = height  # Map height [cells]
     # The origin of the map [m, m, rad].  This is the real-world pose of the
     # cell (0,0) in the map.
-    # center of the map is considered (0,0)
-    self.pmap.info.origin.position.x = v*res/2.0
-    self.pmap.info.origin.position.y = u*res/2.0
-    self.pmap.info.origin.orientation.w = 0.
-    self.pmap.info.origin.orientation.z = 1.
+    self.pmap.info.origin.position.x = wmap_info['origin'][0]
+    self.pmap.info.origin.position.y = wmap_info['origin'][1]
 
     # parameter info
     rospy.loginfo('{:15s} {:s}'.format('vec_topic', vec_topic))
-    rospy.loginfo('{:15s} {:d}x{:d} px'.format('Map dimensions', u, v))
+    rospy.loginfo('{:15s} {:d}x{:d} px'.format('Map dimensions', height, width))
     rospy.loginfo('{:15s} {:d}'.format('# access points', self.nap))
 
   def vecCallback(self, vec_data):
@@ -102,7 +104,7 @@ class LikelihoodMap():
 
     # Publish Occ Grid
     self.pmap.header.stamp = self.im_msg.header.stamp
-    self.pmap.data = np.asarray(100*self.prob/np.max(self.prob), dtype=np.int8).T.flatten()
+    self.pmap.data = np.asarray(100*self.prob[::-1, :]/np.max(self.prob), dtype=np.int8).flatten()
     self.pub_prob.publish(self.pmap)
 
   def run(self):
