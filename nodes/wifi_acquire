@@ -48,24 +48,20 @@ class RSS():
     m = None
     while not rospy.is_shutdown():
       try:
-        print(seq)
         rss_msg = Rss()
         rss_msg.header.stamp = rospy.Time.now()
         rss_msg.header.frame_id = self.frame_id
-
-        #print("reading line")
         m = self.wifidevice.tcpdump_process.stdout.readline()
-        print("line read")
         while (m is None):
           m = self.wifidevice.tcpdump_process.stdout.readline()
-          print("empty", m)
+          rospy.loginfo("[rss] waiting for tcpdump process to provide data ...", )
 
         string = m.decode().split(' ')
         c = 0
         rss_msg.data = list()
         for i in range(len(string)):
           if 'MHz' in string[i]:
-            rss_msg.freq = np.int(string[i-1])
+            rss_msg.freq = np.int16(string[i-1])
             c += 100
           if 'BSSID' in string[i]:
             rss_msg.mac_address = str(string[i][6:])
