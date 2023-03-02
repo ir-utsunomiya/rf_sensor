@@ -1,0 +1,99 @@
+# Copyright (c) 2023, the rf_sensor authors (see AUTHORS.txt)
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+#!/usr/bin/python
+
+import rospy
+import numpy as np
+from rf_msgs.msg import Rss
+from std_msgs.msg import UInt8MultiArray
+from rf_sensor.WiFiDevice_shm import *
+
+class Rss2VecMulti():
+  def __init__(self):
+    rospy.init_node('rss2vec', anonymous=True)
+
+    # ros param
+    self.ns = rospy.get_name()
+    self.frame_id = rospy.get_param('~frame_id', 'rss')
+    self.rate = rospy.get_param('~rate', 1)
+    self.mac_file = rospy.get_param('mac_file', "/tmp/maclist.txt")
+    self.mac_dict = read_macdict(self.mac_file, in_bytes=False)
+    self.nap = len(self.mac_dict)
+    self.nantennas = rospy.get_param('nantenas', 8)
+
+    rss_topic = rospy.get_param('~rss_topic', self.frame_id)
+    vec_topic = rospy.get_param('~vec_topic', 'rss_vec')
+
+    # parameter info
+    rospy.loginfo('{:15s} {:s}'.format('frame_id:', self.frame_id))
+    rospy.loginfo('{:15s} {:s}'.format('rss_topic', rss_topic))
+    rospy.loginfo('{:15s} {:s}'.format('vec_topic', vec_topic))
+    rospy.loginfo('{:15s} {:d}'.format('rate', self.rate))
+    rospy.loginfo('{:15s} {:s}'.format('mac_file', self.mac_file))
+    rospy.loginfo('{:15s} {:d}'.format('# mac addresses', self.nap))
+    for key, value in self.mac_dict.items():
+      rospy.loginfo('{:} : {:}'.format(key, value))
+
+    # Subscribers
+    self.sub_rss = list()
+    for i in range(1, self.nantennas):
+      self.sub_rss.append(rospy.Subscriber("{:s}{:d}".format(rss_topic, i), Rss, self.rssCallback))
+    # Publishers
+    self.pub_vec = rospy.Publisher(vec_topic, UInt8MultiArray, queue_size=1)
+
+    # init variables
+    self.seq = 0
+    self.data = list()
+    self.rate = rospy.Rate(self.rate)
+
+  def rssCallback(self, rss_data):
+    self.data.append(rss_data)
+
+  def sample(self):
+    if len(self.data) > 5:
+      z = np.zeros(self.nap)
+      count = np.zeros(self.nap)
+
+      for datum in self.data:
+        index = None
+        try:
+          index = self.mac_dict[datum.mac_address]
+        except:
+          # TODO: update maclist
+          print("address not found in the dict", datum.mac_address)
+        if index is not None:
+          z[index] += np.mean(datum.data)
+          count[index] += 1.
+      self.data = list()  # clear buffer
+
+      # publish to vector
+      vec = UInt8MultiArray()
+
+      index = [i for i in range(self.nap) if z[i] != 0]
+      for i in index:
+        print(i, z[i])
+        z[i] = (z[i]/(95*count[i])+1.0)*255
+
+      vec.data = np.array(z, dtype=int).tolist()
+
+      # publish message
+      self.pub_vec.publish(vec)
+
+    else:
+      rospy.loginfo('Not enough samples')
+    return 0
+
+  def run(self):
+    while not rospy.is_shutdown():
+      # try:
+      self.sample()
+      # except:
+      #  rospy.loginfo('[rss] Error in RSS.sample')
+      # sleep
+      self.rate.sleep()
+
+
+if __name__ == '__main__':
+  rss = Rss2VecMulti()
+  rss.run()

@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  nav_msgs
   rf_msgs
 )
 
@@ -70,6 +71,7 @@ catkin_install_python(PROGRAMS
   nodes/wifi_acquire_shm
   nodes/rss2shm
   nodes/rss2vec
+  nodes/rss2vec_multi
   nodes/likelihoodmap
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
