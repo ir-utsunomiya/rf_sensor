@@ -1,0 +1,13 @@
+session_name: 'likelihood_demo'
+windows:
+- focus: 'true'
+  layout: d600,96x59,0,0{48x59,0,0[48x14,0,0,0,48x14,0,15,5,48x14,0,30,3,48x14,0,45,4],47x59,49,0[47x29,49,0,2,47x29,49,30,6]}
+  options: {}
+  panes:
+  - roscore
+  - echo 'rosrun rf_sensor wifi_acquire _iface:=wlx1cbfcee5c995'
+  - echo 'rosrun rf_sensor rss2vec'
+  - rosrun rf_sensor likelihoodmap
+  - rostopic echo /rss
+  - rostopic echo /rss_vec
+  window_name: likelihood_demo
