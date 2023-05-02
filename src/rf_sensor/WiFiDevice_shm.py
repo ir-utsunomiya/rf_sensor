@@ -1,7 +1,7 @@
 # Copyright (c) 2022, the rf_sensor authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-#!/usr/bin/env python3
+####!/usr/bin/env python3
 
 # ****************************************************
 # Class for manipulating wifi interfaces with shared memory

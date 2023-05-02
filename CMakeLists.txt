@@ -4,6 +4,13 @@ project(rf_sensor)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
+# set(VENV /home/hiroto/code/venv_devel/rf_senosr_env)
+# set(PYTHON /home/hiroto/code/venv_devel/rf_senosr_env/bin/python3)
+# set(PYTHON_EXECUTABLE /home/hiroto/code/venv_devel/rf_senosr_env/bin/python3)
+# set(PYTHON_LIBRARY)
+
+#set(PYTHON_PACKAGE_PATH /home/hiroto/code/venv_devel/rf_senosr_env/lib/python3.8/site-packages)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -16,7 +23,9 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
+find_package(PythonInterp)
+find_package(PythonLibs)
+#find_package(Python COMPONENTS Interpreter Development)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
