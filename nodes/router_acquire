@@ -7,68 +7,83 @@ import rospy
 import numpy as np
 
 from socket import *
+import select
+
 from rf_msgs.msg import Rss
 
-def open_socket(ip,port):
-    s=socket(AF_INET, SOCK_DGRAM)
-    s.bind((ip,port))
-    return s
+def open_socket(ip, port):
+  s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+  s.bind((ip, port))  # bind socket to desired port
+  s.setblocking(0)  # to avoid blocking the port
+  return s
 
 class RSS():
-    def __init__(self):
-        rospy.init_node('rss',anonymous=True)
+  def __init__(self):
+    rospy.init_node('rss', anonymous=True)
 
-        ##ros param
-        self.ns = rospy.get_namespace()
-        self.rss_port = rospy.get_param('~rss_port',8801)
-        self.rss_ip   = rospy.get_param('~rss_ip','192.168.1.255')
-        self.frame_id = rospy.get_param('~frame_id','rss')
-        rss_topic = rospy.get_param('~rss_topic',self.ns+'rss')
+    # ros param
+    self.ns = rospy.get_namespace()
+    self.rss_port = rospy.get_param('~rss_port', 8801)
+    self.rss_ip = rospy.get_param('~rss_ip', '192.168.0.255')
+    self.frame_id = rospy.get_param('~frame_id', 'rss')
+    rss_topic = rospy.get_param('~rss_topic', self.ns+'rss')
 
-        #publishers
-        rospy.loginfo('[rss] publishing rss msg on {} topic'.format(rss_topic))
-        self.pub_rss = rospy.Publisher(rss_topic,Rss,queue_size=1)
+    # publishers
+    rospy.loginfo('[rss] publishing rss msg on {} topic'.format(rss_topic))
+    self.pub_rss = rospy.Publisher(rss_topic, Rss, queue_size=1)
 
+  def run(self):
+    s = open_socket(self.rss_ip, self.rss_port)
+    rospy.loginfo('[rss] binded to {}:{}'.format(self.rss_ip, self.rss_port))
+    seq = 0
+    rospy.loginfo('[rss] waiting for udp broadcast')
 
-    def run(self):
-        s = open_socket(self.rss_ip,self.rss_port)
-        rospy.loginfo('[rss] binded to {}:{}'.format(self.rss_ip,self.rss_port))
-        seq = 0
-        rospy.loginfo('[rss] waiting for udp broadcast')
+    first = True
+    while not rospy.is_shutdown():
+      # to avoid blocking the port wait till data is available or until timeout (10 seconds)
+      ready = select.select([s], [], [], 10)
+      if ready[0]:
+        m = s.recvfrom(1024)
+        try:
+          rss_msg = Rss()
+          rss_msg.header.seq = + seq
+          rss_msg.header.stamp = rospy.Time.now()
+          rss_msg.header.frame_id = self.frame_id
 
-        first = True
-        while not rospy.is_shutdown():
-            m=s.recvfrom(1024)
-            try:
-                rss_msg = Rss()
-                rss_msg.header.seq =+ seq
-                rss_msg.header.stamp = rospy.Time.now()
-                rss_msg.header.frame_id = self.frame_id
+          string = m[0].decode().split(' ')
+          c = 0
+          rss_msg.data = list()
+          for i in range(len(string)):
+            if 'MHz' in string[i]:
+              rss_msg.freq = np.int(string[i-1])
+              c += 100
+            if 'BSSID' in string[i]:
+              rss_msg.mac_address = str(string[i][6:])
+              c += 100
+            if 'dBm' in string[i]:
+              rss_msg.data.append(np.int8(string[i][:-3]))
+              c += 1
+            if c > 200:  # data is complete
+              # Publish msg
+              self.pub_rss.publish(rss_msg)
+            else:
+              rospy.loginfo('[rss] incomplete data')
+              rospy.loginfo(m[0].decode())
 
-                string = m[0].decode().split(' ')
-                c = 0
-                rss_msg.data = list()
-                for i in range(len(string)):
-                    if 'MHz'   in string[i]: rss_msg.freq = np.int(string[i-1]); c+=100;
-                    if 'BSSID' in string[i]: rss_msg.mac_address = str(string[i][6:]); c+=100;
-                    if 'dBm'   in string[i]: rss_msg.data.append(np.int8(string[i][:-3])); c+=1;
-                if c>200: #data is complete
-                    #Publish msg
-                    self.pub_rss.publish(rss_msg)
-                else:
-                    rospy.loginfo('[rss] incomplete data')
-                    rospy.loginfo(m[0].decode())
+          if first:
+            rospy.loginfo('[rss] Receiving messages')
+            first = False
+        except:
+          rospy.loginfo('[rss] corrupted packet')
+          rospy.loginfo(m[0].decode())
+          first = True
 
-                if first:
-                    rospy.loginfo('[rss] Receiving messages')
-                    first = False
+      else:  # if no message was received
+        rospy.loginfo('Failed to receive message')
 
-            except:
-                rospy.loginfo('[rss] corrupted packet')
-                rospy.loginfo(m[0].decode())
-                first = True
-        s.close()
+    s.close()
+
 
 if __name__ == '__main__':
-    rss = RSS()
-    rss.run()
+  rss = RSS()
+  rss.run()
