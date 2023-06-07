@@ -44,42 +44,48 @@ class RSS():
       ready = select.select([s], [], [], 10)
       if ready[0]:
         m = s.recvfrom(1024)
+
         try:
           rss_msg = Rss()
           rss_msg.header.seq = + seq
           rss_msg.header.stamp = rospy.Time.now()
           rss_msg.header.frame_id = self.frame_id
 
-          string = m[0].decode().split(' ')
+          udp_message = m[0].decode().split(' ')
           c = 0
           rss_msg.data = list()
-          for i in range(len(string)):
-            if 'MHz' in string[i]:
-              rss_msg.freq = np.int(string[i-1])
+
+          # rospy.loginfo(udp_message)
+          for i, mi in enumerate(udp_message):
+            if 'MHz' in mi:
+              rss_msg.freq = int(udp_message[i-1])
               c += 100
-            if 'BSSID' in string[i]:
-              rss_msg.mac_address = str(string[i][6:])
+            if 'BSSID' in mi:
+              rss_msg.mac_address = udp_message[i][6:]
               c += 100
-            if 'dBm' in string[i]:
-              rss_msg.data.append(np.int8(string[i][:-3]))
+            if 'dBm' in mi:
+              rss_msg.data.append(int(mi[:-3]))
               c += 1
-            if c > 200:  # data is complete
-              # Publish msg
-              self.pub_rss.publish(rss_msg)
-            else:
-              rospy.loginfo('[rss] incomplete data')
-              rospy.loginfo(m[0].decode())
+
+          if c > 200:  # data is complete
+            # Publish msg
+            self.pub_rss.publish(rss_msg)
+          else:
+            rospy.loginfo('[rss] incomplete data')
+            rospy.loginfo(m[0].decode())
 
           if first:
             rospy.loginfo('[rss] Receiving messages')
             first = False
+
         except:
           rospy.loginfo('[rss] corrupted packet')
           rospy.loginfo(m[0].decode())
           first = True
 
       else:  # if no message was received
-        rospy.loginfo('Failed to receive message')
+        rospy.logwarn('No messages received in 10s ... ')
+        first = True
 
     s.close()
 
