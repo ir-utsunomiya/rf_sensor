@@ -6,6 +6,7 @@
 import rospy
 import numpy as np
 from rf_msgs.msg import Rss
+from rf_msgs.msg import Vec
 from std_msgs.msg import UInt8MultiArray
 from rf_sensor.WiFiDevice_shm import *
 
@@ -31,7 +32,7 @@ class Rss2VecMulti():
     rospy.loginfo('{:15s} {:s}'.format('vec_topic', vec_topic))
     rospy.loginfo('{:15s} {:d}'.format('rate', self.rate))
     rospy.loginfo('{:15s} {:s}'.format('mac_file', self.mac_file))
-    rospy.loginfo('{:15s} {:d}'.format('# mac addresses', self.nap))
+    rospy.loginfo('{:15s} {:d}'.format('mac addresses', self.nap))
     for key, value in self.mac_dict.items():
       rospy.loginfo('{:} : {:}'.format(key, value))
 
@@ -41,6 +42,7 @@ class Rss2VecMulti():
       self.sub_rss.append(rospy.Subscriber("{:s}{:d}".format(rss_topic, i), Rss, self.rssCallback))
     # Publishers
     self.pub_vec = rospy.Publisher(vec_topic, UInt8MultiArray, queue_size=1)
+    #self.pub_nap = rospy.Publisher(vec_topic, Rss, queue_size=1)
 
     # init variables
     self.seq = 0
@@ -65,6 +67,7 @@ class Rss2VecMulti():
         if index is not None:
           z[index] += np.mean(datum.data)
           count[index] += 1.
+      print("count indesx",count[index])
       self.data = list()  # clear buffer
 
       # publish to vector
@@ -72,13 +75,16 @@ class Rss2VecMulti():
 
       index = [i for i in range(self.nap) if z[i] != 0]
       for i in index:
+        print(i, z[i], count[i])
+        z[i] = (z[i]/(95*count[i])+1.0)
         print(i, z[i])
-        z[i] = (z[i]/(95*count[i])+1.0)*255
 
       vec.data = np.array(z, dtype=int).tolist()
+      #vec.nap = self.nap
 
       # publish message
       self.pub_vec.publish(vec)
+      #self.pub_vec.publish(self.nap)
 
     else:
       rospy.loginfo('Not enough samples')

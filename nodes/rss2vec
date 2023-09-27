@@ -30,7 +30,7 @@ class Rss2Vec():
     rospy.loginfo('{:15s} {:s}'.format('vec_topic', vec_topic))
     rospy.loginfo('{:15s} {:d}'.format('rate', self.rate))
     rospy.loginfo('{:15s} {:s}'.format('mac_file', self.mac_file))
-    rospy.loginfo('{:15s} {:d}'.format('# mac addresses', self.nap))
+    rospy.loginfo('{:15s} {:d}'.format('mac addresses', self.nap))
     for key, value in self.mac_dict.items():
       rospy.loginfo('{:} : {:}'.format(key, value))
 
@@ -70,7 +70,7 @@ class Rss2Vec():
       index = [i for i in range(self.nap) if z[i] != 0]
       for i in index:
         print(i, z[i])
-        z[i] = (z[i]/(95*count[i])+1.0)*255
+        z[i] = (z[i]/(95*count[i])+1.0)
 
       vec.data = np.array(z, dtype=int).tolist()
 
