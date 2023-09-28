@@ -17,7 +17,7 @@ class Rss2VecMulti():
     # ros param
     self.ns = rospy.get_name()
     self.frame_id = rospy.get_param('~frame_id', 'rss')
-    self.rate = rospy.get_param('~rate', 1)
+    self.rate = rospy.get_param('~rate', 0.3)
     self.mac_file = rospy.get_param('mac_file', "/tmp/maclist.txt")
     self.mac_dict = read_macdict(self.mac_file, in_bytes=False)
     self.nap = len(self.mac_dict)
@@ -30,7 +30,7 @@ class Rss2VecMulti():
     rospy.loginfo('{:15s} {:s}'.format('frame_id:', self.frame_id))
     rospy.loginfo('{:15s} {:s}'.format('rss_topic', rss_topic))
     rospy.loginfo('{:15s} {:s}'.format('vec_topic', vec_topic))
-    rospy.loginfo('{:15s} {:d}'.format('rate', self.rate))
+    rospy.loginfo('{:15s} {:f}'.format('rate', self.rate))
     rospy.loginfo('{:15s} {:s}'.format('mac_file', self.mac_file))
     rospy.loginfo('{:15s} {:d}'.format('mac addresses', self.nap))
     for key, value in self.mac_dict.items():
