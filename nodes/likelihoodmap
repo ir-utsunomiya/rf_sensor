@@ -28,7 +28,7 @@ class LikelihoodMap():
     prob_topic = rospy.get_param('~prob_topic', 'rss_probmap')
     frame_id = rospy.get_param('~frame_id', 'map')
 
-    self.rate = rospy.Rate(3)
+    self.rate = rospy.Rate(1)
 
     # Subscriber
     self.sub_vec = rospy.Subscriber(vec_topic, UInt8MultiArray, self.vecCallback)
