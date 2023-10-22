@@ -1,6 +1,3 @@
-# Copyright (c) 2023, the rf_sensor authors (see AUTHORS.txt)
-# Licensed under the BSD 3-clause license (see LICENSE.txt)
-
 #!/usr/bin/python
 
 import rospy
@@ -8,7 +5,7 @@ import numpy as np
 import cv2
 import yaml
 
-from std_msgs.msg import UInt8MultiArray
+from std_msgs.msg import Float32MultiArray  # Change to FloatMultiArray
 from sensor_msgs.msg import Image as sensorImage
 import cv_bridge
 from PIL import Image
@@ -17,101 +14,103 @@ from nav_msgs.msg import OccupancyGrid
 import matplotlib.pyplot as plt
 
 class LikelihoodMap():
-  def __init__(self):
-    rospy.init_node('rss2vec', anonymous=True)
+    def __init__(self):
+        rospy.init_node('rss2vec', anonymous=True)
 
-    # ros param
-    self.ns = rospy.get_name()
-    parent_path = rospy.get_param('~path', "/mnt/current_data/mech/wifimap")
-    vec_topic = rospy.get_param('~vec_topic', 'rss_vec')
-    image_topic = rospy.get_param('~image_topic', 'rss_likelihood')
-    prob_topic = rospy.get_param('~prob_topic', 'rss_probmap')
-    frame_id = rospy.get_param('~frame_id', 'map')
+        # ros param
+        self.ns = rospy.get_name()
+        parent_path = rospy.get_param('~path', "/home/sohshi/bagfiles/10zemi/map_file/wifimap/1019")
+        vec_topic = rospy.get_param('~vec_topic', 'rss_vec')
+        image_topic = rospy.get_param('~image_topic', 'rss_likelihood')
+        prob_topic = rospy.get_param('~prob_topic', 'rss_probmap')
+        frame_id = rospy.get_param('~frame_id', 'map')
 
-    self.rate = rospy.Rate(1)
+        self.rate = rospy.Rate(1)
 
-    # Subscriber
-    self.sub_vec = rospy.Subscriber(vec_topic, UInt8MultiArray, self.vecCallback)
-    # Publisher
-    self.pub_image = rospy.Publisher(image_topic, sensorImage, queue_size=1)
-    self.pub_prob = rospy.Publisher(prob_topic, OccupancyGrid, queue_size=1)
+        # Subscriber
+        self.sub_vec = rospy.Subscriber(vec_topic, Float32MultiArray, self.vecCallback)  # Change to FloatMultiArray
+        # Publisher
+        self.pub_image = rospy.Publisher(image_topic, sensorImage, queue_size=1)
+        self.pub_prob = rospy.Publisher(prob_topic, OccupancyGrid, queue_size=1)
 
-    # Read wifimapinfo
-    with open("{:s}/wifi_map_info.yaml".format(parent_path), 'r') as f:
-      wmap_info = yaml.safe_load(f)
-    self.nap = wmap_info['nap']
-    width = wmap_info['dimension'][0]  # x axis
-    height = wmap_info['dimension'][1]  # y axis
+            # Read wifimapinfo
+        with open("{:s}/wifi_map_info.yaml".format(parent_path), 'r') as f:
+          wmap_info = yaml.safe_load(f)
+        self.nap = wmap_info['nap']
+        width = wmap_info['dimension'][0]  # x axis
+        height = wmap_info['dimension'][1]  # y axis
 
-    # init map as a np.array ()
-    self.wifi_map = np.zeros((height, width, self.nap))
-    self.wifi_map_sd = np.zeros((height, width, 1))
+        # init map as a np.array ()
+        self.wifi_map = np.zeros((height, width, self.nap))
+        self.wifi_map_sd = np.zeros((height, width, 1))
 
-    # read wifi map data (signal strength) from images
-    for ap in range(self.nap):
-      self.wifi_map[:, :, ap] = cv2.imread(
-          "{:s}/wifimap{:03d}.ppm".format(parent_path, ap))[:, :, 0].astype(np.uint8)
-    # read wifi map data (standard deviation) from image
-    self.wifi_map_sd[:, :, 0] = cv2.imread(
-        "{:s}/wifisd.ppm".format(parent_path, ap))[:, :, 0].astype(np.uint8)
-    # convert map data to float
-    self.wifi_map = self.wifi_map.astype(np.float64)
-    self.wifi_map_sd = self.wifi_map_sd.astype(np.float64)
-    self.prob = np.zeros((height, width))
+        # read wifi map data (signal strength) from images
+        for ap in range(self.nap):
+          self.wifi_map[:, :, ap] = cv2.imread(
+              "{:s}/wifimap{:03d}.ppm".format(parent_path, ap))[:, :, 0].astype(np.uint8)
+        # read wifi map data (standard deviation) from image
+        self.wifi_map_sd[:, :, 0] = cv2.imread(
+            "{:s}/wifisd.ppm".format(parent_path, ap))[:, :, 0].astype(np.uint8)
+        # convert map data to float
+        self.wifi_map = self.wifi_map.astype(np.float64)
+        self.wifi_map_sd = self.wifi_map_sd.astype(np.float64)
+        self.prob = np.zeros((height, width))
 
-    # initialize likelihood image
-    self.im_msg = sensorImage()
-    self.im_msg.height = height
-    self.im_msg.width = width
-    self.im_msg.encoding = 'rgb8'
-    self.im_msg.is_bigendian = False
-    self.im_msg.step = 3*self.im_msg.width
+        # initialize likelihood image
+        self.im_msg = sensorImage()
+        self.im_msg.height = height
+        self.im_msg.width = width
+        self.im_msg.encoding = 'rgb8'
+        self.im_msg.is_bigendian = False
+        self.im_msg.step = 3*self.im_msg.width
 
-    # initialize likelihood map
-    self.pmap = OccupancyGrid()
-    self.pmap.header.frame_id = frame_id
-    self.pmap.info.resolution = wmap_info['resolution']  # The map resolution [m/cell]
-    self.pmap.info.width = width  # Map width [cells]
-    self.pmap.info.height = height  # Map height [cells]
-    # The origin of the map [m, m, rad].  This is the real-world pose of the
-    # cell (0,0) in the map.
-    self.pmap.info.origin.position.x = wmap_info['origin'][0]
-    self.pmap.info.origin.position.y = wmap_info['origin'][1]
+        # initialize likelihood map
+        self.pmap = OccupancyGrid()
+        self.pmap.header.frame_id = frame_id
+        self.pmap.info.resolution = wmap_info['resolution']  # The map resolution [m/cell]
+        self.pmap.info.width = width  # Map width [cells]
+        self.pmap.info.height = height  # Map height [cells]
+        # The origin of the map [m, m, rad].  This is the real-world pose of the
+        # cell (0,0) in the map.
+        self.pmap.info.origin.position.x = wmap_info['origin'][0]
+        self.pmap.info.origin.position.y = wmap_info['origin'][1]
 
-    # parameter info
-    rospy.loginfo('{:15s} {:s}'.format('vec_topic', vec_topic))
-    rospy.loginfo('{:15s} {:d}x{:d} px'.format('Map dimensions', height, width))
-    rospy.loginfo('{:15s} {:d}'.format('# access points', self.nap))
+        # parameter info
+        rospy.loginfo('{:15s} {:s}'.format('vec_topic', vec_topic))
+        rospy.loginfo('{:15s} {:d}x{:d} px'.format('Map dimensions', height, width))
+        rospy.loginfo('{:15s} {:d}'.format('# access points', self.nap))
 
-  def vecCallback(self, vec_data):
-    z = [int(datum) for datum in vec_data.data]
-    z = np.asarray(z).astype(np.float16)
-    # def likelihood_map(z,wifi_map, wifi_map_sd):
-    logsqrt2pi = 0.5*np.log(2*np.pi)
-    sd_nap = np.matmul(self.wifi_map_sd, np.ones((1, self.nap)))
-    logerr = -np.log(sd_nap) - logsqrt2pi - 0.5*((self.wifi_map-z)/sd_nap)**2
-    # joint likelihood =  exp(sum(alphai*logi)), with sum(alphai)=1
-    alpha = z/np.sum(z)
-    logtot = np.matmul(logerr, alpha[:, None])
-    self.prob = np.exp(logtot[:, :, 0])
 
-    # Publish likelihood as a ros sensor_msg/image
-    im_data = Image.fromarray((255*self.prob/np.max(self.prob)).astype(np.uint8))
-    im_data = im_data.convert('RGB')
-    self.im_msg.header.stamp = rospy.Time.now()
-    self.im_msg.data = np.array(im_data).tobytes()
-    self.pub_image.publish(self.im_msg)
+    def vecCallback(self, vec_data):
+        #z = [int(datum) for datum in vec_data.data]
+        #z = np.asarray(z).astype(np.float16)
+        z = np.array(vec_data.data, dtype=np.float32)
+        z *= 255.0
+        # def likelihood_map(z,wifi_map, wifi_map_sd):
+        logsqrt2pi = 0.5*np.log(2*np.pi)
+        sd_nap = np.matmul(self.wifi_map_sd, np.ones((1, self.nap)))
+        logerr = -np.log(sd_nap) - logsqrt2pi - 0.5*((self.wifi_map-z)/sd_nap)**2
+        # joint likelihood =  exp(sum(alphai*logi)), with sum(alphai)=1
+        alpha = z/np.sum(z)
+        logtot = np.matmul(logerr, alpha[:, None])
+        self.prob = np.exp(logtot[:, :, 0])
 
-    # Publish Occ Grid
-    self.pmap.header.stamp = self.im_msg.header.stamp
-    self.pmap.data = np.asarray(100*self.prob[::-1, :]/np.max(self.prob), dtype=np.int8).flatten()
-    self.pub_prob.publish(self.pmap)
+        # Publish likelihood as a ros sensor_msg/image
+        im_data = Image.fromarray((255*self.prob/np.max(self.prob)).astype(np.uint8))
+        im_data = im_data.convert('RGB')
+        self.im_msg.header.stamp = rospy.Time.now()
+        self.im_msg.data = np.array(im_data).tobytes()
+        self.pub_image.publish(self.im_msg)
 
-  def run(self):
-    while not rospy.is_shutdown():
-      self.rate.sleep()
+        # Publish Occ Grid
+        self.pmap.header.stamp = self.im_msg.header.stamp
+        self.pmap.data = np.asarray(100*self.prob[::-1, :]/np.max(self.prob), dtype=np.int8).flatten()
+        self.pub_prob.publish(self.pmap)
 
+    def run(self):
+        while not rospy.is_shutdown():
+          self.rate.sleep()
 
 if __name__ == '__main__':
-  rss = LikelihoodMap()
-  rss.run()
+    rss = LikelihoodMap()
+    rss.run()
