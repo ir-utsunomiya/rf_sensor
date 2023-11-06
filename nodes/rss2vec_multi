@@ -6,7 +6,7 @@
 import rospy
 import numpy as np
 from rf_msgs.msg import Rss
-from std_msgs.msg import UInt8MultiArray
+from std_msgs.msg import Float64MultiArray
 from rf_sensor.WiFiDevice_shm import *
 
 class Rss2VecMulti():
@@ -40,7 +40,7 @@ class Rss2VecMulti():
     for i in range(1, self.nantennas):
       self.sub_rss.append(rospy.Subscriber("{:s}{:d}".format(rss_topic, i), Rss, self.rssCallback))
     # Publishers
-    self.pub_vec = rospy.Publisher(vec_topic, UInt8MultiArray, queue_size=1)
+    self.pub_vec = rospy.Publisher(vec_topic, Float64MultiArray, queue_size=1)
 
     # init variables
     self.seq = 0
@@ -68,14 +68,15 @@ class Rss2VecMulti():
       self.data = list()  # clear buffer
 
       # publish to vector
-      vec = UInt8MultiArray()
+      vec = Float64MultiArray()
 
       index = [i for i in range(self.nap) if z[i] != 0]
       for i in index:
         print(i, z[i])
-        z[i] = (z[i]/(95*count[i])+1.0)*255
+        z[i] = (z[i]/(95*count[i])+1.0)
 
-      vec.data = np.array(z, dtype=int).tolist()
+      vec.data = np.array(z, dtype=float).tolist()
+      print(f"vec data length = {len(vec.data)}")
 
       # publish message
       self.pub_vec.publish(vec)
