@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   nav_msgs
   rf_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -25,10 +26,15 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_python_setup()
 
 ## Generate messages in the 'msg' folder
-#add_message_files(
-#  FILES
-#  Rss.msg
-#)
+add_message_files(
+ FILES
+ RSSVecWithTimestamp.msg
+)
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES std_msgs
+)
 
 
 ###################################
@@ -37,7 +43,7 @@ catkin_python_setup()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES acquire_pcap
-  CATKIN_DEPENDS rospy std_msgs rf_msgs
+  CATKIN_DEPENDS rospy std_msgs rf_msgs message_runtime message_generation
 #  DEPENDS system_lib
 )
 
@@ -72,6 +78,7 @@ catkin_install_python(PROGRAMS
   nodes/rss2shm
   nodes/rss2vec
   nodes/rss2vec_multi
+  nodes/rss2vec_multi_with_ts
   nodes/likelihoodmap
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
