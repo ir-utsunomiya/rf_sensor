@@ -56,6 +56,7 @@ class Rss2VecMultiWithTimestamp():
     self.data.append(rss_data)
 
   def sample(self):
+    # print(f"self.data length = {len(self.data)}")
     if len(self.data) > 5:
       z = np.zeros(self.nap)
       count = np.zeros(self.nap)
@@ -64,24 +65,32 @@ class Rss2VecMultiWithTimestamp():
         index = None
         try:
           index = self.mac_dict[datum.mac_address]
+          print(f"index = {index}, datum.mac_address = {datum.mac_address}")
         except:
           # TODO: update maclist
           print("address not found in the dict", datum.mac_address)
         if index is not None:
-          z[index] += np.mean(datum.data)
+          print(f"index = {index}, datum.data = {datum.data}")
+          z[index] += np.mean(datum.data[0]) # index means ap index, datum.data means rss value, np.mean(datum.data) means average of rss value of each antenna, z[index] means sum of rss value of each ap
           count[index] += 1.
       self.data = list()  # clear buffer
 
       # publish to vector
       vec_with_ts = RSSVecWithTimestamp()
 
-      index = [i for i in range(self.nap) if z[i] != 0]
+      index = [i for i in range(self.nap) if z[i] != 0] # extract ap index list which have non-zero rss values
+
+      # execute loop process only if there is at least one non-zero rss value
       for i in index:
-        print(i, z[i])
+        # print(i, z[i])
+        # print(f"i = {i}, z[i] = {z[i]}, count[i] = {count[i]}")
         z[i] = (z[i]/(95*count[i])+1.0)
+        # print(i, z[i])
+        # print("")
 
       vec_with_ts.data = np.array(z, dtype=float).tolist()
-      print(f"vec data length = {len(vec_with_ts.data)}")
+      # print(f"vec data = {vec_with_ts.data} \n")
+      # print(f"vec data length = {len(vec_with_ts.data)}\n")
 
       current_time = rospy.Time.now()
       vec_with_ts.header.stamp = current_time
