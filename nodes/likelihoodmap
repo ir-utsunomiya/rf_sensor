@@ -213,7 +213,7 @@ class LikelihoodMap():
     # def likelihood_map(z,wifi_map, wifi_map_sd):
     logsqrt2pi = 0.5*np.log(2*np.pi)
     
-    sd_nap = np.matmul(15*(self.wifi_map_sd**.15), np.ones((1, self.nap)))
+    sd_nap = np.matmul(15*(self.wifi_map_sd**.15), np.ones((1, self.nap))) # wifimap sdに0.15乗して15かける
     #sd_nap = np.ones((1, self.nap))
     
     logerr = -np.log(sd_nap) - logsqrt2pi - 0.5*((self.wifi_map-z)/sd_nap)**2
