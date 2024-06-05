@@ -22,7 +22,7 @@ class LikelihoodMap():
 
     # ros param
     self.ns = rospy.get_name()
-    parent_path = rospy.get_param('~path', "/mnt/current_data/mech/wifimap")
+    parent_path = rospy.get_param('~path', "/home/kawauchi/bagfiles/wifimap_ts8")
     vec_topic = rospy.get_param('~vec_topic', 'rss_vec')
     image_topic = rospy.get_param('~image_topic', 'rss_likelihood')
     prob_topic = rospy.get_param('~prob_topic', 'rss_probmap')

@@ -56,7 +56,7 @@ class WiFiDevice:
         terminate:
             ends all processes
     """
-    def __init__(self,**kwargs):
+    def __init__(self,**kwargs):#**kwargsは引数を柔軟に変更
         self.iface = kwargs.get('iface','wlp5s0')
         self.channels = kwargs.get('channels', (1,6,11))
         self.chopper_ts = kwargs.get('channel_hopper_sampling_time',1.0)
@@ -65,7 +65,7 @@ class WiFiDevice:
         self.data = kwargs.get('data',None)
 
         # variables
-        if self.data is None: self.data = multiprocessing.Manager().list()
+        if self.data is None: self.data = multiprocessing.Manager().list()#複数のプロセス間で共有可能なリスト
 
         # filters
         if self.filter == 'Beacon': self.filter = ' type mgt subtype beacon'
@@ -128,7 +128,7 @@ class WiFiDevice:
         iface must be initialized before with init(iface)
         """
         cmd = 'sudo -S tcpdump -i {:s} -ne --time-stamp-precision=micro -l --immediate-mode {:s}'.format(self.iface,self.filter)
-        self.tcpdump_process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)
+        self.tcpdump_process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)#cmd.split():cmdの中身を空白で区切ってlistに入れる
         print('tcpdump process initialized')
         return 0
 
