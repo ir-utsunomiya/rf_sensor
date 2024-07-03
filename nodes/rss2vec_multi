@@ -25,7 +25,7 @@ class Rss2VecMulti():
     self.nantennas = rospy.get_param('nantenas', 8)
 
     rss_topic = rospy.get_param('~rss_topic', self.frame_id)
-    vec_topic = rospy.get_param('~vec_topic', 'rss_vec')
+    vec_topic = rospy.get_param('~vec_topic', 'rss_vec_multi')
 
     # parameter info
     rospy.loginfo('{:15s} {:s}'.format('frame_id:', self.frame_id))
@@ -39,7 +39,7 @@ class Rss2VecMulti():
 
     # Subscribers
     self.sub_rss = list()
-    for i in range(1, self.nantennas):
+    for i in range(1, self.nantennas + 1):
       self.sub_rss.append(rospy.Subscriber("{:s}{:d}".format(rss_topic, i), Rss, self.rssCallback))
     # Publishers
     #self.pub_vec = rospy.Publisher(vec_topic, Float32MultiArray, queue_size=1)
@@ -69,7 +69,7 @@ class Rss2VecMulti():
         if index is not None:
           z[index] += np.mean(datum.data)
           count[index] += 1.
-      print("count indesx",count[index])
+      print("count index",count[index])
       self.data = list()  # clear buffer
 
       # publish to vector
@@ -78,7 +78,7 @@ class Rss2VecMulti():
 
       index = [i for i in range(self.nap) if z[i] != 0]
       for i in index:
-        print(i, z[i], count[i])
+        #print(i, z[i], count[i])
         z[i] = (z[i]/(95*count[i])+1.0)*255 #changed from 0 ~ 255 to 0 ~ 1
         print(i, z[i])
 

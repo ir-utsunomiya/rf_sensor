@@ -15,7 +15,7 @@ class Rss2Vec():
 
     # ros param
     self.ns = rospy.get_name()
-    self.frame_id = rospy.get_param('~frame_id', 'rss')
+    self.frame_id = rospy.get_param('~frame_id', 'rss1')
     self.rate = rospy.get_param('~rate', 1)
     self.mac_file = rospy.get_param('mac_file', "/tmp/maclist.txt")
     self.mac_dict = read_macdict(self.mac_file, in_bytes=False)
