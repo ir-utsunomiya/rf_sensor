@@ -1,7 +1,0 @@
-set(rf_sensor_SETUP_PY_SETUP_MODULE "distutils.core")
-set(rf_sensor_SETUP_PY_VERSION "0.0.0")
-set(rf_sensor_SETUP_PY_SCRIPTS "")
-set(rf_sensor_SETUP_PY_PACKAGES "rf_sensor")
-set(rf_sensor_SETUP_PY_PACKAGE_DIRS "src/rf_sensor")
-set(rf_sensor_SETUP_PY_MODULES "")
-set(rf_sensor_SETUP_PY_MODULE_DIRS "")

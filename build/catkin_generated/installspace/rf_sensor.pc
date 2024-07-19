@@ -1,8 +1,0 @@
-prefix=/usr/local
-
-Name: rf_sensor
-Description: Description of rf_sensor
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: rospy std_msgs rf_msgs
