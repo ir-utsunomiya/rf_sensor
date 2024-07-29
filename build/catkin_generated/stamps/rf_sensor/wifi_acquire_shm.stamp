@@ -1,0 +1,102 @@
+# Copyright (c) 2019, the rf_sensor authors (see AUTHORS.txt)
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+#!/usr/bin/python
+
+import rospy
+import numpy as np
+from rf_msgs.msg import Rss
+from rf_sensor.WiFiDevice_shm import WiFiDeviceSHM
+
+class RSS():
+  def __init__(self):
+    rospy.init_node('rss', anonymous=True)
+
+    # ros param
+    self.ns = rospy.get_name()
+    self.frame_id = rospy.get_param('~frame_id', 'rss')
+    rss_topic = rospy.get_param('~rss_topic', self.frame_id)
+    #if len(self.ns) >= 1: rss_topic = self.ns+'/'+rss_topic
+    # WiFi Device param
+    iface = rospy.get_param('~iface', 'wlp5s0')
+    channels = rospy.get_param('~channels', [1, 6, 11])
+    ch_ts = rospy.get_param('~channel_hopper_sampling_time', 1.0)
+    filter = rospy.get_param('~filter', 'Beacon')
+
+    # parameter info
+    rospy.loginfo('{:15s} {:s}'.format('frame_id:', self.frame_id))
+    rospy.loginfo('{:15s} {:s}'.format('rss_topic', rss_topic))
+    rospy.loginfo('{:15s} {:s}'.format('device', iface))
+    rospy.loginfo('{:15s} {:} '.format('channels', channels))
+    rospy.loginfo('{:15s} {:} '.format('total scan time', ch_ts))
+    rospy.loginfo('{:15s} {:s}'.format('Beacon', filter))
+
+    # Publishers
+    self.pub_rss = rospy.Publisher(rss_topic, Rss, queue_size=1)
+
+    # Init WiFi device
+    self.wifidevice = WiFiDeviceSHM(iface=iface,
+                                 channels=channels,
+                                 channel_hopper_sampling_time=ch_ts,
+                                 filter=filter)
+
+  def run(self):
+    seq = 0
+    first = True
+    self.wifidevice.chopper_start()
+    self.wifidevice.tcpdump_start()
+    self.wifidevice.sample()
+    m = None
+    while not rospy.is_shutdown():
+      try:
+        print(seq)
+        rss_msg = Rss()
+        rss_msg.header.stamp = rospy.Time.now()
+        rss_msg.header.frame_id = self.frame_id
+
+        #print("reading line")
+        m = None
+        #m = self.wifidevice.tcpdump_process.stdout.readline()
+        #print("line read")
+        while (m is None):
+          m = self.wifidevice.tcpdump_process.stdout.readline()
+          print("empty", m)
+
+        string = m.decode().split(' ')
+        c = 0
+        rss_msg.data = list()
+        for i in range(len(string)):
+          if 'MHz' in string[i]:
+            rss_msg.freq = np.int(string[i-1])
+            c += 100
+          if 'BSSID' in string[i]:
+            rss_msg.mac_address = str(string[i][6:])
+            c += 100
+          if 'dBm' in string[i]:
+            rss_msg.data.append(np.int8(string[i][:-3]))
+            c += 1
+        if c > 200:  # data is complete
+          # Publish msg
+          seq += 1
+          rss_msg.header.seq = seq
+          self.pub_rss.publish(rss_msg)
+        else:
+          rospy.loginfo('[rss] incomplete data')
+          rospy.loginfo(m[0].decode())
+
+        # print("decoded")
+
+        if first:
+          rospy.loginfo('[rss] Receiving messages')
+          first = False
+
+      except:
+        rospy.loginfo('[rss] corrupted packet')
+        rospy.loginfo(m)
+        first = True
+    # s.close()
+
+
+if __name__ == '__main__':
+  rss = RSS()
+  rss.run()

@@ -73,6 +73,7 @@ catkin_install_python(PROGRAMS
   nodes/rss2vec
   nodes/rss2vec_multi
   nodes/likelihoodmap
+  nodes/rss2vec_maxrss
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
