@@ -239,9 +239,9 @@ class LikelihoodMap():
     # img_rotate_180 = cv2.rotate(img, cv2.ROTATE_180)
     img = cv2.bitwise_not(img)
     cv2.imshow("sample", img)
-    cv2.waitKey(50)
+    cv2.waitKey(100)
     
-    final_image_path = "/home/nanakubo/Pictures/output_image.png"
+    final_image_path = "/home/rebot/bagfiles/rebot/nanakubo/8zemi_b4/wifimap/output_image.png"
     cv2.imwrite(final_image_path, img)
 
     
