@@ -12,7 +12,7 @@ from rf_sensor.WiFiDevice_shm import *
 
 class Rss2Vec_float():
   def __init__(self):
-    rospy.init_node('rss2vec_floatRss2Vec_float', anonymous=True)
+    rospy.init_node('rss2vec_float', anonymous=True)
 
     # ros param
     self.ns = rospy.get_name()
