@@ -11,7 +11,7 @@ from std_msgs.msg import UInt8MultiArray
 # from std_msgs.msg import Float32MultiArray
 from rf_sensor.WiFiDevice_shm import *
 
-class Rss2VecMulti_custom():
+class Rss2VecMulti():
   def __init__(self):
     rospy.init_node('rss2vec_multi', anonymous=True)
 
@@ -109,5 +109,5 @@ class Rss2VecMulti_custom():
 
 
 if __name__ == '__main__':
-  rss = Rss2VecMulti_custom()
+  rss = Rss2VecMulti()
   rss.run()

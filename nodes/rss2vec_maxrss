@@ -13,7 +13,7 @@ from rf_sensor.WiFiDevice_shm import *
 
 class Rss2VecMaxRss():
     def __init__(self):
-        rospy.init_node('rss2vec', anonymous=True)
+        rospy.init_node('rss2vec_maxrss', anonymous=True)
 
         # ROS parameters
         self.ns = rospy.get_name()
