@@ -7,13 +7,13 @@ import rospy
 import numpy as np
 from rf_msgs.msg import Rss
 #from rf_msgs.msg import Vec
-from std_msgs.msg import UInt8MultiArray
-#from std_msgs.msg import Float32MultiArray
+# from std_msgs.msg import UInt8MultiArray
+from std_msgs.msg import Float32MultiArray
 from rf_sensor.WiFiDevice_shm import *
 
-class Rss2VecMulti_custom():
+class Rss2VecMulti_float():
   def __init__(self):
-    rospy.init_node('rss2vec', anonymous=True)
+    rospy.init_node('rss2vec_multi_float', anonymous=True)
 
     # ros param
     self.ns = rospy.get_name()
@@ -39,20 +39,12 @@ class Rss2VecMulti_custom():
 
     # Subscribers
     self.sub_rss = list()
-    # for i in range(1, self.nantennas):
-    #   self.sub_rss.append(rospy.Subscriber("{:s}{:d}".format(rss_topic, i), Rss, self.rssCallback))
-    self.sub_rss.append(rospy.Subscriber("{:s}1".format(rss_topic), Rss, self.rssCallback))
-    self.sub_rss.append(rospy.Subscriber("{:s}2".format(rss_topic), Rss, self.rssCallback))
-    self.sub_rss.append(rospy.Subscriber("{:s}3".format(rss_topic), Rss, self.rssCallback))
-    self.sub_rss.append(rospy.Subscriber("{:s}4".format(rss_topic), Rss, self.rssCallback))
-    self.sub_rss.append(rospy.Subscriber("{:s}5".format(rss_topic), Rss, self.rssCallback))
-    self.sub_rss.append(rospy.Subscriber("{:s}6".format(rss_topic), Rss, self.rssCallback))
-    self.sub_rss.append(rospy.Subscriber("{:s}7".format(rss_topic), Rss, self.rssCallback))
-    self.sub_rss.append(rospy.Subscriber("{:s}8".format(rss_topic), Rss, self.rssCallback))
+    for i in range(1, self.nantennas):
+      self.sub_rss.append(rospy.Subscriber("{:s}{:d}".format(rss_topic, i), Rss, self.rssCallback))
     
     # Publishers
-    #self.pub_vec = rospy.Publisher(vec_topic, Float32MultiArray, queue_size=1)
-    self.pub_vec = rospy.Publisher(vec_topic, UInt8MultiArray, queue_size=1)
+    self.pub_vec = rospy.Publisher(vec_topic, Float32MultiArray, queue_size=1)
+    # self.pub_vec = rospy.Publisher(vec_topic, UInt8MultiArray, queue_size=1)
     #self.pub_nap = rospy.Publisher(vec_topic, Rss, queue_size=1)
 
     # init variables
@@ -76,14 +68,17 @@ class Rss2VecMulti_custom():
           # TODO: update maclist
           print("address not found in the dict", datum.mac_address)
         if index is not None:
-          z[index] += np.mean(datum.data)
-          count[index] += 1.
+          # z[index] += np.mean(datum.data)
+          non_zero_datum = np.array(datum.data)[np.array(datum.data) != 0]
+          if non_zero_datum.size > 0:
+            z[index] += np.mean(non_zero_datum)
+            count[index] += 1.
       print("count indesx",count[index])
       self.data = list()  # clear buffer
 
       # publish to vector
-      #vec = Float32MultiArray()
-      vec = UInt8MultiArray()
+      vec = Float32MultiArray()
+      # vec = UInt8MultiArray()
 
       index = [i for i in range(self.nap) if z[i] != 0]
       for i in index:
@@ -91,8 +86,8 @@ class Rss2VecMulti_custom():
         z[i] = (z[i]/(95*count[i])+1.0)*255 #changed from 0 ~ 255 to 0 ~ 1
         print(i, z[i])
 
-      #vec.data = np.array(z, dtype=float).tolist()
-      vec.data = np.array(z, dtype=int).tolist()
+      # vec.data = np.array(z, dtype=int).tolist()
+      vec.data = np.array(z, dtype=float).tolist()
       #vec.nap = self.nap
 
       # publish message
@@ -114,5 +109,5 @@ class Rss2VecMulti_custom():
 
 
 if __name__ == '__main__':
-  rss = Rss2VecMulti_custom()
+  rss = Rss2VecMulti_float()
   rss.run()

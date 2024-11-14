@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rf_sensor)
+set(irlab_PATH $ENV{irlab_PATH})
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -50,6 +51,7 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${irlab_PATH}/include
 )
 
 ## Declare a C++ exec
@@ -71,8 +73,9 @@ catkin_install_python(PROGRAMS
   nodes/wifi_acquire_shm
   nodes/rss2shm
   nodes/rss2vec
+  nodes/rss2vec_float
   nodes/rss2vec_multi
-  nodes/rss2vec_multi_custom
+  nodes/rss2vec_multi_float
   nodes/likelihoodmap
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
@@ -110,3 +113,40 @@ catkin_install_python(PROGRAMS
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+########## c++ ##########
+add_executable(vec2shm wifi/vec2shm.cpp)
+
+target_link_libraries(vec2shm
+  ${catkin_LIBRARIES}
+  ${irlab_PATH}/lib/libact.a
+  ${irlab_PATH}/lib/libshm.a
+  ${irlab_PATH}/lib/libpose.a
+  ${irlab_PATH}/lib/libpose_board.a
+)
+
+add_dependencies(vec2shm
+${${PROJECT_NAME}_EXPORTED_TARGETS} 
+${catkin_EXPORTED_TARGETS}
+)
+
+add_executable(vec2shm_float wifi/vec2shm_float.cpp)
+
+target_link_libraries(vec2shm_float
+  ${catkin_LIBRARIES}
+  ${irlab_PATH}/lib/libact.a
+  ${irlab_PATH}/lib/libshm.a
+  ${irlab_PATH}/lib/libpose.a
+  ${irlab_PATH}/lib/libpose_board.a
+)
+
+add_dependencies(vec2shm_float
+${${PROJECT_NAME}_EXPORTED_TARGETS} 
+${catkin_EXPORTED_TARGETS}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
