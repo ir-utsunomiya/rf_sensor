@@ -7,11 +7,11 @@ import rospy
 import numpy as np
 from rf_msgs.msg import Rss
 #from rf_msgs.msg import Vec
+#from std_msgs.msg import UInt8MultiArray
 from std_msgs.msg import Float32MultiArray
-#from std_msgs.msg import Float32MultiArray
 from rf_sensor.WiFiDevice_shm import *
 
-class Rss2VecMaxRss():
+class Rss2VecMW():
     def __init__(self):
         rospy.init_node('rss2vec', anonymous=True)
 
@@ -52,7 +52,7 @@ class Rss2VecMaxRss():
 
     def rssCallback(self, rss_data):
         self.data.append(rss_data)
-
+#
 #    def sample(self):
 #        if len(self.data) > 0:
 #            z = np.zeros(self.nap)
@@ -77,70 +77,67 @@ class Rss2VecMaxRss():
 #
 #            for mac, max_rss in mac_max_rss.items():
 #                index = self.mac_dict[mac]
-#                # Normalize and scale the RSS value
-#                normalized_rss = (max_rss / 95.0 + 1.0)
-#                mW = 10**(9.5*(normalized_rss - 1.0))
+#                mW = 10**(max_rss / 10)
 #                
 #                # Log or print both normalized and raw RSS values
-#                rospy.loginfo("MAC Address: {}, Index: {}, Raw RSS: {:.2f}, Normalized RSS: {:.2f}".format(
-#                    mac, index, max_rss, normalized_rss))
+#                rospy.loginfo("MAC Address: {}, Index: {}, Raw RSS: {:.2f}, mW: {:.2f}".format(
+#                    mac, index, max_rss, mW))
 #                
 #                z[index] = mW
 #
 #            # Set the data for publishing
-#            vec.data = z.tolist()
+#            vec.data = np.array(z, dtype=float).tolist()
 #
 #            # Publish message
 #            self.pub_vec.publish(vec)
 #        else:
 #            rospy.loginfo('Not enough samples')
 #        return 0
-        
+#
     def sample(self):
         if len(self.data) > 0:
             z = np.zeros(self.nap)
-            mac_max_rss = {}
+            mac_rss_values = {}
 
             for datum in self.data:
                 try:
                     index = self.mac_dict[datum.mac_address]
-                    if datum.mac_address not in mac_max_rss:
-                        mac_max_rss[datum.mac_address] = []
+                    if datum.mac_address not in mac_rss_values:
+                        mac_rss_values[datum.mac_address] = []
 
-                    # RSS値が0以上のデータのみリストに追加
-                    #non_zero_rss = [x for x in datum.data if x > 0]
-                    mac_max_rss[datum.mac_address].extend(datum.data)
+                    # アンテナごとのRSS値をリストに追加
+                    mac_rss_values[datum.mac_address].extend(datum.data)
                 except KeyError:
                     rospy.logwarn("Address not found in the dict: {}".format(datum.mac_address))
+            
+            self.data = list()  # バッファをクリア
 
-            self.data = list()  # Clear buffer
-
-            # Publish to vector
+            # ベクトルの初期化
             vec = Float32MultiArray()
 
-            for mac, rss_values in mac_max_rss.items():
+            for mac, rss_list in mac_rss_values.items():
                 index = self.mac_dict[mac]
 
-                # RSS値の上位3つを取得
-                top_3_rss = sorted(rss_values, reverse=True)[:3]
+                # RSS値をソートして大きい3つを取得
+                top_rss_values = sorted(rss_list, reverse=True)[:3]
+                
+                # 平均値を計算
+                avg_rss = np.mean(top_rss_values)
 
-                # 観測値が0以外のものが3つ未満なら、その数で平均を計算
-                if len(top_3_rss) > 0:
-                    avg_rss = sum(top_3_rss) / len(top_3_rss)
-                    normalized_rss = (avg_rss / 95.0 + 1.0)
-                    mW = 10**(9.5*(normalized_rss - 1.0))
+                # mWに変換
+                mW = 10**(avg_rss / 10)
+                
+                # ログに出力
+                rospy.loginfo("MAC Address: {}, Index: {}, Top 3 RSS Avg: {:.2f}, mW: {:.2f}".format(
+                    mac, index, avg_rss, mW))
+                
+                # ベクトルに追加
+                z[index] = mW
 
-                    rospy.loginfo("MAC Address: {}, Index: {}, Avg RSS: {:.2f}, Normalized RSS: {:.2f}".format(
-                        mac, index, avg_rss, normalized_rss))
+            # 配信データの設定
+            vec.data = np.array(z, dtype=float).tolist()
 
-                    z[index] = mW
-                else:
-                    rospy.loginfo("MAC Address: {}, No valid RSS samples found.".format(mac))
-
-            # Set the data for publishing
-            vec.data = z.tolist()
-
-            # Publish message
+            # メッセージの配信
             self.pub_vec.publish(vec)
         else:
             rospy.loginfo('Not enough samples')
@@ -153,5 +150,5 @@ class Rss2VecMaxRss():
             self.rate.sleep()
 
 if __name__ == '__main__':
-    rss = Rss2VecMaxRss()
+    rss = Rss2VecMW()
     rss.run()

@@ -8,7 +8,7 @@ import numpy as np
 from rf_msgs.msg import Rss
 #from rf_msgs.msg import Vec
 from std_msgs.msg import UInt8MultiArray
-#from std_msgs.msg import Float32MultiArray
+#from std_msgs.msg import UInt8MultiArray
 from rf_sensor.WiFiDevice_shm import *
 
 class Rss2VecMaxRss():
@@ -18,7 +18,7 @@ class Rss2VecMaxRss():
         # ROS parameters
         self.ns = rospy.get_name()
         self.frame_id = rospy.get_param('~frame_id', 'rss')
-        self.rate = rospy.get_param('~rate', 0.333)
+        self.rate = rospy.get_param('~rate', 0.3)
         self.mac_file = rospy.get_param('mac_file', "/tmp/maclist.txt")
         self.mac_dict = read_macdict(self.mac_file, in_bytes=False)
         self.nap = len(self.mac_dict)
@@ -79,6 +79,7 @@ class Rss2VecMaxRss():
                 index = self.mac_dict[mac]
                 # Normalize and scale the RSS value
                 normalized_rss = (max_rss / 95.0 + 1.0) * 255
+                #mW = 10**(9.5*(normalized_rss - 255.0))
                 
                 # Log or print both normalized and raw RSS values
                 rospy.loginfo("MAC Address: {}, Index: {}, Raw RSS: {:.2f}, Normalized RSS: {:.2f}".format(
@@ -94,6 +95,50 @@ class Rss2VecMaxRss():
         else:
             rospy.loginfo('Not enough samples')
         return 0
+        
+#    def sample(self):
+#        if len(self.data) > 0:
+#            z = np.zeros(self.nap)
+#            mac_top3_rss = {}
+#    
+#            for datum in self.data:
+#                try:
+#                    index = self.mac_dict[datum.mac_address]
+#                    if datum.mac_address not in mac_top3_rss:
+#                        mac_top3_rss[datum.mac_address] = []
+#    
+#                    # 現在のRSSデータを配列に追加
+#                    mac_top3_rss[datum.mac_address].append(np.max(datum.data))
+#    
+#                    # リストが4個以上の値を持っている場合、上位3つのみを保持
+#                    if len(mac_top3_rss[datum.mac_address]) > 3:
+#                        mac_top3_rss[datum.mac_address] = sorted(mac_top3_rss[datum.mac_address], reverse=True)[:3]
+#    
+#                except KeyError:
+#                    rospy.logwarn("Address not found in the dict: {}".format(datum.mac_address))
+#            
+#            self.data = list()  # Clear buffer
+#    
+#            # Publish to vector
+#            vec = UInt8MultiArray()
+#    
+#            for mac, top3_rss in mac_top3_rss.items():
+#                index = self.mac_dict[mac]
+#                # 上位3つのRSSの平均を計算
+#                avg_top3_rss = np.mean(top3_rss)
+#                normalized_rss = (avg_top3_rss / 95.0 + 1.0) * 255
+#                
+#                rospy.loginfo("MAC Address: {}, Index: {}, Avg Top 3 RSS: {:.2f}, Normalized RSS: {:.2f}".format(
+#                    mac, index, avg_top3_rss, normalized_rss))
+#                
+#                z[index] = normalized_rss
+#    
+#            vec.data = np.array(z, dtype=int).tolist()
+#            self.pub_vec.publish(vec)
+#        else:
+#            rospy.loginfo('Not enough samples')
+#        return 0
+
 
     def run(self):
         while not rospy.is_shutdown():
@@ -103,7 +148,3 @@ class Rss2VecMaxRss():
 if __name__ == '__main__':
     rss = Rss2VecMaxRss()
     rss.run()
-
-
-
-

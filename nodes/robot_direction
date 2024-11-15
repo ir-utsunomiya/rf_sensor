@@ -1,0 +1,116 @@
+import rospy
+from geometry_msgs.msg import PoseWithCovarianceStamped
+import numpy as np
+import cv2
+import os
+from cv_bridge import CvBridge
+
+class AMCLListener:
+    def __init__(self):
+        self.robot_pose = None
+        self.bridge = CvBridge()
+
+        # HSV画像のパス
+        self.hsv_image_path = '/home/sohshi/bagfiles/wifi_bagfiles/directional_bag/hsvmap_10/hsvmap000_angle20_length50.ppm'  # HSV画像のファイルパスを指定
+
+        # 画像読み込み
+        self.hsv_image = self.load_hsv_image(self.hsv_image_path)
+        
+        # ROSノードを初期化
+        rospy.init_node('robot_direction', anonymous=True)
+        self.pose_sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.pose_callback)
+
+    def load_hsv_image(self, path):
+        """HSV画像を指定したパスから読み込む関数"""
+        if os.path.exists(path):
+            hsv_image = cv2.imread(path)
+            if hsv_image is not None:
+                return hsv_image
+            else:
+                rospy.logerr(f"Failed to load HSV image from {path}")
+        else:
+            rospy.logerr(f"HSV image path does not exist: {path}")
+        return None
+
+    def pose_callback(self, msg):
+        """AMCLの位置情報を取得"""
+        self.robot_pose = msg.pose.pose
+        rospy.loginfo(f"Received robot pose: x={self.robot_pose.position.x}, y={self.robot_pose.position.y}, theta={self.robot_pose.orientation.z}")
+
+    def get_robot_yaw(self):
+        """AMCLの姿勢からyaw（角度）を取得"""
+        if self.robot_pose is None:
+            rospy.logwarn("AMCL pose not available, waiting for pose...")
+            return None
+
+        orientation = self.robot_pose.orientation
+        yaw = self.quaternion_to_yaw(orientation)
+        return yaw
+
+    def quaternion_to_yaw(self, orientation):
+        """クォータニオンからyaw（角度）を計算"""
+        # クォータニオンからyaw（角度）を計算
+        siny = 2 * (orientation.w * orientation.z + orientation.x * orientation.y)
+        cosy = 1 - 2 * (orientation.y * orientation.y + orientation.z * orientation.z)
+        yaw = np.arctan2(siny, cosy)
+        return yaw
+
+    def get_hsv_angle(self, x, y):
+        """HSV画像から指定した位置(x, y)の角度を取得"""
+        if self.hsv_image is not None:
+            hsv_value = self.hsv_image[y, x]  # (y, x)でアクセス
+            hue = hsv_value[0]  # 色相（Hチャンネル）を取得
+            angle = hue * 2.0  # 色相を0-360度に変換
+            # -180から180の範囲に変換
+            if angle > 180:
+                angle -= 360
+            return angle
+        return None
+
+    def compare_angles(self, amcl_yaw, hsv_angle):
+        """AMCLの角度とHSV画像の角度を比較"""
+        if amcl_yaw is not None and hsv_angle is not None:
+            # AMCLの角度とHSVの角度をsin, cosに変換
+            amcl_sin = np.sin(amcl_yaw)
+            amcl_cos = np.cos(amcl_yaw)
+            hsv_sin = np.sin(np.radians(hsv_angle))
+            hsv_cos = np.cos(np.radians(hsv_angle))
+
+            # sinとcosの差を使って誤差を計算
+            angle_error = np.arctan2(hsv_sin - amcl_sin, hsv_cos - amcl_cos)
+            # 絶対値で誤差を求める
+            error_deg = np.degrees(angle_error)
+            # 誤差を-180から180度の範囲に調整
+            if error_deg > 180:
+                error_deg -= 360
+            elif error_deg < -180:
+                error_deg += 360
+            return abs(error_deg)
+        return None
+
+    def run(self):
+        rate = rospy.Rate(10)  # 10 Hzの更新レート
+        while not rospy.is_shutdown():
+            # AMCLの角度を取得
+            amcl_yaw = self.get_robot_yaw()
+            if amcl_yaw is not None:
+                rospy.loginfo(f"AMCL Yaw: {np.degrees(amcl_yaw)} degrees")
+
+            # HSV地図の角度を取得（例：(100, 100)の位置）
+            hsv_angle = self.get_hsv_angle(100, 100)
+            if hsv_angle is not None:
+                rospy.loginfo(f"HSV Angle: {hsv_angle} degrees")
+
+            # 角度の誤差を比較
+            error = self.compare_angles(amcl_yaw, hsv_angle)
+            if error is not None:
+                rospy.loginfo(f"Angle Error: {error} degrees")
+
+            rate.sleep()
+
+if __name__ == '__main__':
+    try:
+        listener = AMCLListener()
+        listener.run()
+    except rospy.ROSInterruptException:
+        pass
