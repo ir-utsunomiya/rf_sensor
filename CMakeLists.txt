@@ -76,6 +76,7 @@ catkin_install_python(PROGRAMS
   nodes/rss2vec_float
   nodes/rss2vec_multi
   nodes/rss2vec_multi_float
+  nodes/rss2vec_directional
   nodes/likelihoodmap
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
@@ -141,6 +142,27 @@ target_link_libraries(vec2shm_float
 )
 
 add_dependencies(vec2shm_float
+${${PROJECT_NAME}_EXPORTED_TARGETS} 
+${catkin_EXPORTED_TARGETS}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
+
+add_executable(vec2shm_directional wifi/vec2shm_directional.cpp)
+
+target_link_libraries(vec2shm_directional
+  ${catkin_LIBRARIES}
+  ${irlab_PATH}/lib/libact.a
+  ${irlab_PATH}/lib/libshm.a
+  ${irlab_PATH}/lib/libpose.a
+  ${irlab_PATH}/lib/libpose_board.a
+)
+
+add_dependencies(vec2shm_directional
 ${${PROJECT_NAME}_EXPORTED_TARGETS} 
 ${catkin_EXPORTED_TARGETS}
 )

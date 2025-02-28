@@ -1,0 +1,71 @@
+# Copyright (c) 2023, the rf_sensor authors (see AUTHORS.txt)
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+#!/usr/bin/python3
+
+import rospy
+import numpy as np
+from rf_msgs.msg import Rss
+from std_msgs.msg import Float32MultiArray
+from rf_sensor.WiFiDevice_shm import *
+from functools import partial
+
+class Rss2VecDirectional:
+    def __init__(self):
+        rospy.init_node('rss2vec_directional', anonymous=True)
+        self.rate = rospy.get_param('~rate', 1.0) #TODO パラ調 データを収集する秒数
+        self.data_count = rospy.get_param('~data_count', 100) #TODO パラ調 処理の有無を決定するデータ数の閾値
+        self.mac_file = rospy.get_param('mac_file', "/tmp/maclist.txt")
+        self.mac_dict = read_macdict(self.mac_file, in_bytes=False)
+        self.nap = len(self.mac_dict)
+
+        # Publishers and Subscribers
+        self.data = [[] for _ in range(8)]
+        self.sub_rss = [
+            rospy.Subscriber(f"rss{i+1}", Rss, partial(self.rssCallback, i))
+            for i in range(8)
+        ]
+        self.pubs = [
+            rospy.Publisher(f"rss_vec_directional_{i+1}", Float32MultiArray, queue_size=1)
+            for i in range(8)
+        ]
+
+        self.rate = rospy.Rate(self.rate)
+
+    def rssCallback(self, index, rss_data):
+        self.data[index].append(rss_data)
+
+    def sample(self, pub_vec_index):
+        print(len(self.data[pub_vec_index]))
+        if len(self.data[pub_vec_index]) >= self.data_count:
+            z = np.zeros(self.nap)
+            count = np.zeros(self.nap)
+
+            for datum in self.data[pub_vec_index]:
+                try:
+                    index = self.mac_dict[datum.mac_address]
+                    non_zero_datum = np.array(datum.data)[np.array(datum.data) != 0]
+                    if non_zero_datum.size > 0:
+                        # z[index] += np.mean(non_zero_datum)
+                        z[index] += np.max(non_zero_datum)
+                        count[index] += 1
+                except KeyError:
+                    rospy.logwarn(f"Address not found in the dict: {datum.mac_address}")
+            
+            self.data[pub_vec_index] = []  # Clear buffer
+
+            vec = Float32MultiArray()
+            vec.data = np.array([(z[i] / (95 * count[i]) + 1.0) * 255 if count[i] > 0 else 0 for i in range(self.nap)], dtype=float).tolist()
+            self.pubs[pub_vec_index].publish(vec)
+        else:
+            rospy.loginfo('Not enough samples')
+
+    def run(self):
+        while not rospy.is_shutdown():
+            for i in range(8):
+                self.sample(i)
+            self.rate.sleep()
+
+if __name__ == '__main__':
+    rss = Rss2VecDirectional()
+    rss.run()
