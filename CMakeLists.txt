@@ -167,6 +167,16 @@ ${${PROJECT_NAME}_EXPORTED_TARGETS}
 ${catkin_EXPORTED_TARGETS}
 )
 
+add_executable(directional_strength_test wifi/directional_strength_test.cpp)
+
+target_link_libraries(directional_strength_test
+  ${catkin_LIBRARIES}
+  ${irlab_PATH}/lib/libact.a
+  ${irlab_PATH}/lib/libshm.a
+  ${irlab_PATH}/lib/libpose.a
+  ${irlab_PATH}/lib/libpose_board.a
+)
+
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
