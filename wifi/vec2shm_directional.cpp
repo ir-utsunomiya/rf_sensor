@@ -17,7 +17,7 @@ extern "C" {
 #define MAX_DATA_SIZE 1000
 
 typedef struct {
-    int nap[NUM_TOPICS];
+    int naps[NUM_TOPICS];
     float data[NUM_TOPICS][MAX_DATA_SIZE];
 } VecshmDirectional;
 
@@ -27,7 +27,7 @@ static VecshmDirectional *vecshm_directional;
 
 void wifivecCallback(const std_msgs::Float32MultiArray::ConstPtr &msg, int topic_index) {
     size_t data_size = msg->data.size();
-    vecshm_directional->nap[topic_index] = data_size;
+    vecshm_directional->naps[topic_index] = data_size;
 
     for (size_t i = 0; i < data_size; i++) { 
         vecshm_directional->data[topic_index][i] = msg->data[i];
