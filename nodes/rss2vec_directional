@@ -14,7 +14,7 @@ class Rss2VecDirectional:
     def __init__(self):
         rospy.init_node('rss2vec_directional', anonymous=True)
         self.rate = rospy.get_param('~rate', 1.0) #TODO パラ調 データを収集する秒数
-        self.data_count = rospy.get_param('~data_count', 100) #TODO パラ調 処理の有無を決定するデータ数の閾値
+        self.data_count = rospy.get_param('~data_count', 10) #TODO パラ調 処理の有無を決定するデータ数の閾値
         self.mac_file = rospy.get_param('mac_file', "/tmp/maclist.txt")
         self.mac_dict = read_macdict(self.mac_file, in_bytes=False)
         self.nap = len(self.mac_dict)
@@ -36,7 +36,7 @@ class Rss2VecDirectional:
         self.data[index].append(rss_data)
 
     def sample(self, pub_vec_index):
-        print(len(self.data[pub_vec_index]))
+        # print(len(self.data[pub_vec_index]))
         if len(self.data[pub_vec_index]) >= self.data_count:
             z = np.zeros(self.nap)
             count = np.zeros(self.nap)
